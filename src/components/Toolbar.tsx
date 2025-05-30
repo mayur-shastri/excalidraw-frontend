@@ -1,0 +1,74 @@
+import React from 'react';
+import { ElementType, ToolOption } from '../types';
+import { 
+  MousePointer, 
+  Pencil, 
+  Square, 
+  Circle, 
+  ArrowUpRight, 
+  Minus,
+  Diamond,
+  ChevronDown,
+  Eraser,
+  Type
+} from 'lucide-react';
+
+interface ToolbarProps {
+  activeTool: ElementType;
+  setActiveTool: (tool: ElementType) => void;
+}
+
+export default function Toolbar({ activeTool, setActiveTool }: ToolbarProps) {
+  const tools: ToolOption[] = [
+    { type: 'selection', icon: 'pointer', label: 'Selection' },
+    { type: 'freedraw', icon: 'pencil', label: 'Pen' },
+    { type: 'rectangle', icon: 'square', label: 'Rectangle' },
+    { type: 'ellipse', icon: 'circle', label: 'Ellipse' },
+    { type: 'arrow', icon: 'arrow', label: 'Arrow' },
+    { type: 'line', icon: 'line', label: 'Line' },
+    { type: 'diamond', icon: 'diamond', label: 'Diamond' },
+    { type: 'rhombus', icon: 'diamond', label: 'Rhombus' },
+    { type: 'text', icon: 'text', label: 'Text' },
+    { type: 'eraser', icon: 'eraser', label: 'Eraser' },
+  ];
+
+  const renderIcon = (iconName: string) => {
+    switch (iconName) {
+      case 'pointer': return <MousePointer size={20} />;
+      case 'pencil': return <Pencil size={20} />;
+      case 'square': return <Square size={20} />;
+      case 'circle': return <Circle size={20} />;
+      case 'arrow': return <ArrowUpRight size={20} />;
+      case 'line': return <Minus size={20} />;
+      case 'diamond': return <Diamond size={20} />;
+      case 'text': return <Type size={20} />;
+      case 'eraser': return <Eraser size={20} />;
+      default: return <MousePointer size={20} />;
+    }
+  };
+
+  return (
+    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white rounded-lg shadow-md p-1 flex items-center">
+      {tools.map((tool) => (
+        <button
+          key={tool.type}
+          className={`p-2 rounded-md mx-1 transition-colors ${
+            activeTool === tool.type 
+              ? 'bg-gray-100 text-black' 
+              : 'text-gray-600 hover:bg-gray-50'
+          }`}
+          onClick={() => setActiveTool(tool.type)}
+          title={tool.label}
+        >
+          {renderIcon(tool.icon)}
+        </button>
+      ))}
+      
+      <div className="h-6 w-px bg-gray-200 mx-2"></div>
+      
+      <button className="p-2 rounded-md text-gray-600 hover:bg-gray-50">
+        <ChevronDown size={20} />
+      </button>
+    </div>
+  );
+}
