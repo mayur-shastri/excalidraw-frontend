@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { DrawElement, Point } from '../../../types';
 import { createElement, updateElementCoordinates } from '../utils/elementUtils';
 import { getCoordinates } from '../utils/canvasUtils';
+import { renderElement } from '../../../utils/renderElements';
 
 export const useDrawing = (
   canvasRef: React.RefObject<HTMLCanvasElement>,
@@ -25,6 +26,25 @@ export const useDrawing = (
     }
   };
 
+  const drawCurrentElement = (currentElement : DrawElement | null) => {
+        if(!currentElement)
+            return null;
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        
+        ctx.save();
+        ctx.translate(props.panOffset.x, props.panOffset.y);
+        ctx.scale(props.scale, props.scale);
+    
+        renderElement(ctx, currentElement);
+        
+        ctx.restore();
+      };
+  
+
   const handleDrawingMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!currentElement) return;
     
@@ -39,6 +59,9 @@ export const useDrawing = (
     
     setCurrentElement(updatedElement);
     redrawCanvas();
+
+    drawCurrentElement(currentElement);
+
   };
 
   const handleDrawingMouseUp = () => {

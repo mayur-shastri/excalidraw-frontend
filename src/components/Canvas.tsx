@@ -249,25 +249,38 @@ const Canvas: React.FC<CanvasProps> = ({
       return prevElements.map(element => {
         if (!selectedElementIds.includes(element.id)) return element;
 
+        // Use the original position at drag start
+        const original = translationStartPositions[element.id] || { x: element.x, y: element.y };
+
         return {
           ...element,
-          x: element.x + deltaX,
-          y: element.y + deltaY,
+          x: original.x + deltaX,
+          y: original.y + deltaY,
           ...(element.type === 'arrow' || element.type === 'line' ? {
             startPoint: {
-              x: element.startPoint.x + deltaX,
-              y: element.startPoint.y + deltaY
+              x: (element as any).startPoint.x + deltaX,
+              y: (element as any).startPoint.y + deltaY
             },
             endPoint: {
-              x: element.endPoint.x + deltaX,
-              y: element.endPoint.y + deltaY
+              x: (element as any).endPoint.x + deltaX,
+              y: (element as any).endPoint.y + deltaY
             }
           } : {}),
           ...(element.type === 'freedraw' ? {
-            points: element.points.map(p => ({
-              x: p.x + deltaX,
-              y: p.y + deltaY
-            }))
+            points: element.points.map((p, idx) => {
+              // If we have original points, use them
+              const origPoints = (translationStartPositions[element.id] as any)?.points;
+              if (origPoints && origPoints[idx]) {
+                return {
+                  x: origPoints[idx].x + deltaX,
+                  y: origPoints[idx].y + deltaY
+                };
+              }
+              return {
+                x: p.x + deltaX,
+                y: p.y + deltaY
+              };
+            })
           } : {})
         };
       });

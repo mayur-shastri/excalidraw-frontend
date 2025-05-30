@@ -4,12 +4,14 @@ import { useCanvasSetup } from './hooks/useCanvasSetup';
 import { useResize } from './hooks/useResize';
 import { useSelection } from './hooks/useSelection';
 import { useDrawing } from './hooks/useDrawing';
-import { CanvasProps } from '../../types';
+import { CanvasProps, DrawElement } from '../../types';
+import { renderElement } from '../../utils/renderElements';
 
 const Canvas: React.FC<CanvasProps> = (props) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { redrawCanvas } = useCanvasSetup(canvasRef, props);
 
+  
   // Initialize all custom hooks
   const { handleResizeMouseDown, handleResizeMouseMove, handleResizeMouseUp } = 
     useResize(canvasRef, props, redrawCanvas);
@@ -41,6 +43,7 @@ const Canvas: React.FC<CanvasProps> = (props) => {
     } else {
       handleDrawingMouseMove(e);
     }
+
   };
 
   const handleMouseUp = () => {
