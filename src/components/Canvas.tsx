@@ -32,6 +32,12 @@ interface CanvasProps {
 
 type ResizeDirection = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw' | null;
 
+interface TranslatingStartState extends Point{
+  startPoint? : Point;
+  endPoint? : Point;
+  points? : Point[];
+}
+
 const Canvas: React.FC<CanvasProps> = ({
   elements,
   setElements,
@@ -51,7 +57,7 @@ const Canvas: React.FC<CanvasProps> = ({
   const [currentElement, setCurrentElement] = useState<DrawElement | null>(null);
   const [resizeDirection, setResizeDirection] = useState<ResizeDirection>(null);
   const [originalElements, setOriginalElements] = useState<DrawElement[]>([]);
-  const [translationStartPositions, setTranslationStartPositions] = useState<Record<string, Point>>({});
+  const [translationStartPositions, setTranslationStartPositions] = useState<Record<string, TranslatingStartState>>({});
 
   // Redraw the canvas
   const redrawCanvas = () => {
@@ -258,12 +264,12 @@ const Canvas: React.FC<CanvasProps> = ({
           y: original.y + deltaY,
           ...(element.type === 'arrow' || element.type === 'line' ? {
             startPoint: {
-              x: (element as any).startPoint.x + deltaX,
-              y: (element as any).startPoint.y + deltaY
+              x: original.startPoint!.x + deltaX,
+              y: original.startPoint!.y + deltaY
             },
             endPoint: {
-              x: (element as any).endPoint.x + deltaX,
-              y: (element as any).endPoint.y + deltaY
+              x: original.endPoint!.x + deltaX,
+              y: original.endPoint!.y + deltaY
             }
           } : {}),
           ...(element.type === 'freedraw' ? {
@@ -516,10 +522,16 @@ const Canvas: React.FC<CanvasProps> = ({
       setIsTranslating(true);
       
       // Store original positions for all selected elements
-      const positions: Record<string, Point> = {};
+      const positions: Record<string, TranslatingStartState> = {};
       elements.forEach(el => {
         if (selectedElementIds.includes(el.id)) {
           positions[el.id] = { x: el.x, y: el.y };
+          if(el.type === 'arrow' || el.type === 'line'){
+            positions[el.id] = {...positions[el.id], startPoint : el.startPoint, endPoint : el.endPoint};
+          }
+          else if(el.type === 'freedraw'){
+            positions[el.id] = {...positions[el.id], points : el.points};
+          }
         }
       });
       setTranslationStartPositions(positions);
