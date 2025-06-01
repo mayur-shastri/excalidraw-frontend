@@ -4,6 +4,17 @@ import { renderElement } from '../utils/renderElements';
 import { generateId } from '../utils/helpers';
 import { defaultStyle } from '../constants';
 
+// TODOs :
+// 1. Rotating Elements
+// 2. Textbox
+// 3. Text in Elements
+// 4. Arrow and Line resize doesn't work
+// 5. Eraser
+// 6. Undo/Redo Feature
+// 7. Fix the fucking rhombus
+// 8. Add images to the diagram
+
+
 interface CanvasProps {
   elements: DrawElement[];
   setElements: React.Dispatch<React.SetStateAction<DrawElement[]>>;
@@ -38,6 +49,11 @@ interface TranslatingStartState extends Point{
   points? : Point[];
 }
 
+interface RotatingStartState extends Point {
+  angle : number;
+  
+}
+
 const Canvas: React.FC<CanvasProps> = ({
   elements,
   setElements,
@@ -58,7 +74,9 @@ const Canvas: React.FC<CanvasProps> = ({
   const [resizeDirection, setResizeDirection] = useState<ResizeDirection>(null);
   const [originalElements, setOriginalElements] = useState<DrawElement[]>([]);
   const [translationStartPositions, setTranslationStartPositions] = useState<Record<string, TranslatingStartState>>({});
-
+  const [isRotating, setIsRotating] = useState(false);
+  const [rotationStartAngle, setRotationStartAngle] = useState<RotatingStartState | null>(null);
+  
   // Redraw the canvas
   const redrawCanvas = () => {
     const canvas = canvasRef.current;
@@ -77,7 +95,7 @@ const Canvas: React.FC<CanvasProps> = ({
 
     // Draw all elements
     elements.forEach(element => {
-      renderElement(ctx, element);
+      renderElement(ctx, element, (selectedElementIds.length > 1));
     });
 
     // Draw selection box
@@ -119,36 +137,21 @@ const Canvas: React.FC<CanvasProps> = ({
     const width = maxX - minX;
     const height = maxY - minY;
 
-    ctx.strokeStyle = '#4285f4';
-    ctx.lineWidth = 1 / scale;
-    ctx.setLineDash([5, 5]);
-    ctx.strokeRect(minX, minY, width, height);
-    ctx.setLineDash([]);
+    // Define a pseudo selection element for rendering selection outline
+    // Note : Never push elements of type SelectionElement to the elements array
+    const pseudoSelectionElement: DrawElement = {
+      id: 'selection-outline',
+      type: 'selection-outline',
+      x: minX,
+      y: minY,
+      width,
+      height,
+      angle: 0,
+      style: { ...defaultStyle },
+      isSelected: true,
+    };
 
-    const handleSize = 8 / scale;
-    const halfHandle = handleSize / 2;
-
-    const handles = [
-      { x: minX - halfHandle, y: minY - halfHandle, dir: 'nw' },
-      { x: minX + width / 2 - halfHandle, y: minY - halfHandle, dir: 'n' },
-      { x: minX + width - halfHandle, y: minY - halfHandle, dir: 'ne' },
-      { x: minX + width - halfHandle, y: minY + height / 2 - halfHandle, dir: 'e' },
-      { x: minX + width - halfHandle, y: minY + height - halfHandle, dir: 'se' },
-      { x: minX + width / 2 - halfHandle, y: minY + height - halfHandle, dir: 's' },
-      { x: minX - halfHandle, y: minY + height - halfHandle, dir: 'sw' },
-      { x: minX - halfHandle, y: minY + height / 2 - halfHandle, dir: 'w' },
-    ];
-
-    ctx.fillStyle = '#ffffff';
-    ctx.strokeStyle = '#4285f4';
-    ctx.lineWidth = 1 / scale;
-
-    handles.forEach(handle => {
-      ctx.beginPath();
-      ctx.rect(handle.x, handle.y, handleSize, handleSize);
-      ctx.fill();
-      ctx.stroke();
-    });
+    renderElement(ctx, pseudoSelectionElement, false);
   };
 
   // Check for resize handle
@@ -502,6 +505,10 @@ const Canvas: React.FC<CanvasProps> = ({
     }
   };
 
+  // const checkRotateHandle = (point : Point)=>{
+
+  // }
+
   // Handle mouse down
   const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const point = getCoordinates(event);
@@ -537,6 +544,11 @@ const Canvas: React.FC<CanvasProps> = ({
       setTranslationStartPositions(positions);
       return;
     }
+
+    // // check for rotation
+    // if(checkRotateHandle(point)){
+
+    // }
 
     setIsDrawing(true);
 
@@ -620,7 +632,7 @@ const Canvas: React.FC<CanvasProps> = ({
     ctx.translate(panOffset.x, panOffset.y);
     ctx.scale(scale, scale);
 
-    renderElement(ctx, currentElement);
+    renderElement(ctx, currentElement, (selectedElementIds.length > 1));
     
     ctx.restore();
   };
@@ -719,6 +731,11 @@ const Canvas: React.FC<CanvasProps> = ({
 
   useEffect(() => {
     redrawCanvas();
+    const canvas = canvasRef.current;
+    if(canvas){
+      const ctx = canvas.getContext('2d');
+      drawResizeHandles(ctx!);
+    }
   }, [elements, scale, panOffset, selectionBox]);
 
   useEffect(() => {

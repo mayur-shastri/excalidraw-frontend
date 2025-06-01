@@ -3,7 +3,7 @@ export type Point = {
   y: number;
 };
 
-export type ElementType = 'selection' | 'freedraw' | 'rectangle' | 'ellipse' | 'arrow' | 'line' | 'diamond' | 'rhombus' | 'eraser' | 'text';
+export type ElementType = 'selection' | 'freedraw' | 'rectangle' | 'ellipse' | 'arrow' | 'line' | 'diamond' | 'rhombus' | 'eraser' | 'text' | 'selection-outline';
 
 export type ElementStyle = {
   strokeColor: string;
@@ -68,6 +68,10 @@ export type TextElement = ElementBase & {
   text: string;
 };
 
+export type SelectionOutline = ElementBase & {
+  type : 'selection-outline';
+}
+
 export type DrawElement = 
   | FreedrawElement
   | RectangleElement
@@ -76,7 +80,8 @@ export type DrawElement =
   | LineElement
   | DiamondElement
   | RhombusElement
-  | TextElement;
+  | TextElement
+  | SelectionOutline;
 
 export type ToolOption = {
   type: ElementType;

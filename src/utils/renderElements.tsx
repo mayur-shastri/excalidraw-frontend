@@ -1,6 +1,6 @@
 import { DrawElement, FreedrawElement, ArrowElement, LineElement, ResizeHandle, TextElement } from '../types';
 
-export const renderElement = (ctx: CanvasRenderingContext2D, element: DrawElement) => {
+export const renderElement = (ctx: CanvasRenderingContext2D, element: DrawElement, multiSelectionFlag : boolean) => {
   const { style, isSelected } = element;
   
   ctx.strokeStyle = style.strokeColor;
@@ -46,7 +46,7 @@ export const renderElement = (ctx: CanvasRenderingContext2D, element: DrawElemen
       break;
   }
   
-  if (isSelected) {
+  if (isSelected && !multiSelectionFlag) {
     drawSelectionOutline(ctx, element);
   }
   
@@ -177,7 +177,6 @@ const renderLine = (ctx: CanvasRenderingContext2D, element: LineElement) => {
 
 const drawSelectionOutline = (ctx: CanvasRenderingContext2D, element: DrawElement) => {
   const { x, y, width, height } = element;
-  
   ctx.strokeStyle = '#4285f4';
   ctx.lineWidth = 1;
   ctx.setLineDash([5, 5]);
