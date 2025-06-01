@@ -43,15 +43,15 @@ interface CanvasProps {
 
 type ResizeDirection = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw' | null;
 
-interface TranslatingStartState extends Point{
-  startPoint? : Point;
-  endPoint? : Point;
-  points? : Point[];
+interface TranslatingStartState extends Point {
+  startPoint?: Point;
+  endPoint?: Point;
+  points?: Point[];
 }
 
 interface RotatingStartState extends Point {
-  angle : number;
-  
+  angle: number;
+
 }
 
 const Canvas: React.FC<CanvasProps> = ({
@@ -76,12 +76,12 @@ const Canvas: React.FC<CanvasProps> = ({
   const [translationStartPositions, setTranslationStartPositions] = useState<Record<string, TranslatingStartState>>({});
   const [isRotating, setIsRotating] = useState(false);
   const [rotationStartAngle, setRotationStartAngle] = useState<RotatingStartState | null>(null);
-  
+
   // Redraw the canvas
   const redrawCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
@@ -126,7 +126,7 @@ const Canvas: React.FC<CanvasProps> = ({
     if (selectedElements.length === 0) return;
 
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    
+
     selectedElements.forEach(element => {
       minX = Math.min(minX, element.x);
       minY = Math.min(minY, element.y);
@@ -160,7 +160,7 @@ const Canvas: React.FC<CanvasProps> = ({
     if (selectedElements.length === 0) return null;
 
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    
+
     selectedElements.forEach(element => {
       minX = Math.min(minX, element.x);
       minY = Math.min(minY, element.y);
@@ -173,14 +173,14 @@ const Canvas: React.FC<CanvasProps> = ({
     const handleSize = 8 / scale;
     const tolerance = handleSize * 2;
 
-    if (isPointInRect(point, minX - handleSize/2, minY - handleSize/2, handleSize, tolerance)) return 'nw';
-    if (isPointInRect(point, minX + width/2 - handleSize/2, minY - handleSize/2, handleSize, tolerance)) return 'n';
-    if (isPointInRect(point, minX + width - handleSize/2, minY - handleSize/2, handleSize, tolerance)) return 'ne';
-    if (isPointInRect(point, minX + width - handleSize/2, minY + height/2 - handleSize/2, handleSize, tolerance)) return 'e';
-    if (isPointInRect(point, minX + width - handleSize/2, minY + height - handleSize/2, handleSize, tolerance)) return 'se';
-    if (isPointInRect(point, minX + width/2 - handleSize/2, minY + height - handleSize/2, handleSize, tolerance)) return 's';
-    if (isPointInRect(point, minX - handleSize/2, minY + height - handleSize/2, handleSize, tolerance)) return 'sw';
-    if (isPointInRect(point, minX - handleSize/2, minY + height/2 - handleSize/2, handleSize, tolerance)) return 'w';
+    if (isPointInRect(point, minX - handleSize / 2, minY - handleSize / 2, handleSize, tolerance)) return 'nw';
+    if (isPointInRect(point, minX + width / 2 - handleSize / 2, minY - handleSize / 2, handleSize, tolerance)) return 'n';
+    if (isPointInRect(point, minX + width - handleSize / 2, minY - handleSize / 2, handleSize, tolerance)) return 'ne';
+    if (isPointInRect(point, minX + width - handleSize / 2, minY + height / 2 - handleSize / 2, handleSize, tolerance)) return 'e';
+    if (isPointInRect(point, minX + width - handleSize / 2, minY + height - handleSize / 2, handleSize, tolerance)) return 'se';
+    if (isPointInRect(point, minX + width / 2 - handleSize / 2, minY + height - handleSize / 2, handleSize, tolerance)) return 's';
+    if (isPointInRect(point, minX - handleSize / 2, minY + height - handleSize / 2, handleSize, tolerance)) return 'sw';
+    if (isPointInRect(point, minX - handleSize / 2, minY + height / 2 - handleSize / 2, handleSize, tolerance)) return 'w';
 
     return null;
   };
@@ -319,7 +319,7 @@ const Canvas: React.FC<CanvasProps> = ({
   // Create new element
   const createElement = (type: ElementType, start: Point): DrawElement | null => {
     const id = generateId();
-    
+
     switch (type) {
       case 'freedraw':
         return {
@@ -433,9 +433,9 @@ const Canvas: React.FC<CanvasProps> = ({
     for (let i = elements.length - 1; i >= 0; i--) {
       const element = elements[i];
       if (
-        point.x >= element.x && 
-        point.x <= element.x + element.width && 
-        point.y >= element.y && 
+        point.x >= element.x &&
+        point.x <= element.x + element.width &&
+        point.y >= element.y &&
         point.y <= element.y + element.height
       ) {
         return element;
@@ -447,7 +447,7 @@ const Canvas: React.FC<CanvasProps> = ({
   // Find elements in selection box
   const findElementsInSelectionBox = () => {
     if (!selectionBox) return [];
-    
+
     return elements
       .filter(element => (
         element.x < selectionBox.startX + selectionBox.width &&
@@ -496,9 +496,9 @@ const Canvas: React.FC<CanvasProps> = ({
         'ne': 'nesw-resize', 'sw': 'nesw-resize'
       };
       canvas.style.cursor = cursorMap[resizeDir];
-    } else if (selectedElementIds.length > 0 && 
-               findElementAtPosition(point)?.id && 
-               selectedElementIds.includes(findElementAtPosition(point)!.id)) {
+    } else if (selectedElementIds.length > 0 &&
+      findElementAtPosition(point)?.id &&
+      selectedElementIds.includes(findElementAtPosition(point)!.id)) {
       canvas.style.cursor = 'move';
     } else {
       canvas.style.cursor = tool === 'selection' ? 'default' : 'crosshair';
@@ -527,17 +527,27 @@ const Canvas: React.FC<CanvasProps> = ({
     const clickedElement = findElementAtPosition(point);
     if (selectedElementIds.length > 0 && clickedElement && selectedElementIds.includes(clickedElement.id)) {
       setIsTranslating(true);
+
+      if (clickedElement) {
+        if (event.shiftKey) {
+          setSelectedElementIds(prev =>
+            prev.includes(clickedElement.id)
+              ? prev.filter(id => id !== clickedElement.id)
+              : [...prev, clickedElement.id]
+          );
+        }
+      }
       
       // Store original positions for all selected elements
       const positions: Record<string, TranslatingStartState> = {};
       elements.forEach(el => {
         if (selectedElementIds.includes(el.id)) {
           positions[el.id] = { x: el.x, y: el.y };
-          if(el.type === 'arrow' || el.type === 'line'){
-            positions[el.id] = {...positions[el.id], startPoint : el.startPoint, endPoint : el.endPoint};
+          if (el.type === 'arrow' || el.type === 'line') {
+            positions[el.id] = { ...positions[el.id], startPoint: el.startPoint, endPoint: el.endPoint };
           }
-          else if(el.type === 'freedraw'){
-            positions[el.id] = {...positions[el.id], points : el.points};
+          else if (el.type === 'freedraw') {
+            positions[el.id] = { ...positions[el.id], points: el.points };
           }
         }
       });
@@ -555,9 +565,9 @@ const Canvas: React.FC<CanvasProps> = ({
     if (tool === 'selection') {
       if (clickedElement) {
         if (event.shiftKey) {
-          setSelectedElementIds(prev => 
-            prev.includes(clickedElement.id) 
-              ? prev.filter(id => id !== clickedElement.id) 
+          setSelectedElementIds(prev =>
+            prev.includes(clickedElement.id)
+              ? prev.filter(id => id !== clickedElement.id)
               : [...prev, clickedElement.id]
           );
         } else if (!selectedElementIds.includes(clickedElement.id)) {
@@ -619,28 +629,28 @@ const Canvas: React.FC<CanvasProps> = ({
     drawCurrentElement(currentElement);
   };
 
-  const drawCurrentElement = (currentElement : DrawElement | null) => {
-    if(!currentElement)
-        return null;
+  const drawCurrentElement = (currentElement: DrawElement | null) => {
+    if (!currentElement)
+      return null;
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
+
     ctx.save();
     ctx.translate(panOffset.x, panOffset.y);
     ctx.scale(scale, scale);
 
     renderElement(ctx, currentElement, (selectedElementIds.length > 1));
-    
+
     ctx.restore();
   };
 
   // Update element during creation
   const updateElement = (element: DrawElement, currentPoint: Point, startPoint: Point): DrawElement => {
     const updated = { ...element };
-    
+
     switch (element.type) {
       case 'freedraw':
         updated.points = [...(updated as any).points, currentPoint];
@@ -657,7 +667,7 @@ const Canvas: React.FC<CanvasProps> = ({
         updated.width = maxX - minX;
         updated.height = maxY - minY;
         break;
-        
+
       case 'rectangle':
       case 'ellipse':
       case 'diamond':
@@ -673,7 +683,7 @@ const Canvas: React.FC<CanvasProps> = ({
           updated.height = Math.abs(updated.height);
         }
         break;
-        
+
       case 'arrow':
       case 'line':
         (updated as ArrowElement | LineElement).endPoint = currentPoint;
@@ -685,7 +695,7 @@ const Canvas: React.FC<CanvasProps> = ({
         updated.height = Math.abs(currentPoint.y - startY);
         break;
     }
-    
+
     return updated;
   };
 
@@ -723,7 +733,7 @@ const Canvas: React.FC<CanvasProps> = ({
       canvas.height = canvas.offsetHeight;
       redrawCanvas();
     };
-    
+
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
     return () => window.removeEventListener('resize', resizeCanvas);
@@ -732,14 +742,14 @@ const Canvas: React.FC<CanvasProps> = ({
   useEffect(() => {
     redrawCanvas();
     const canvas = canvasRef.current;
-    if(canvas){
+    if (canvas) {
       const ctx = canvas.getContext('2d');
       drawResizeHandles(ctx!);
     }
   }, [elements, scale, panOffset, selectionBox]);
 
   useEffect(() => {
-    setElements(prev => 
+    setElements(prev =>
       prev.map(el => ({
         ...el,
         isSelected: selectedElementIds.includes(el.id)
