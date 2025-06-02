@@ -15,7 +15,7 @@ export const renderElement = (ctx: CanvasRenderingContext2D, element: DrawElemen
     const centerY = element.y + element.height / 2;
     
     ctx.translate(centerX, centerY);
-    ctx.rotate((element.angle * Math.PI) / 180);
+    ctx.rotate(element.angle);
     ctx.translate(-centerX, -centerY);
   }
   
@@ -126,18 +126,24 @@ const renderDiamond = (ctx: CanvasRenderingContext2D, element: DrawElement) => {
 
 const renderRhombus = (ctx: CanvasRenderingContext2D, element: DrawElement) => {
   const { x, y, width, height, style } = element;
-  
+  // Skew factor: how much to skew horizontally (positive = right, negative = left)
+  const skew = width * 0.25; // adjust this factor as needed
+
   ctx.beginPath();
-  ctx.moveTo(x + width / 4, y);
-  ctx.lineTo(x + width, y + height / 2);
-  ctx.lineTo(x + (3 * width) / 4, y + height);
-  ctx.lineTo(x, y + height / 2);
+  // Top-left
+  ctx.moveTo(x + skew, y);
+  // Top-right
+  ctx.lineTo(x + width, y);
+  // Bottom-right
+  ctx.lineTo(x + width - skew, y + height);
+  // Bottom-left
+  ctx.lineTo(x, y + height);
   ctx.closePath();
-  
+
   if (style.fillStyle === 'solid') {
     ctx.fill();
   }
-  
+
   ctx.stroke();
 };
 

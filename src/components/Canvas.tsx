@@ -11,7 +11,7 @@ import { defaultStyle } from '../constants';
 // 4. Arrow and Line resize doesn't work
 // 5. Eraser
 // 6. Undo/Redo Feature
-// 7. Fix the fucking rhombus
+// 7. Fix the fucking rhombus --> DONE
 // 8. Add images to the diagram
 
 
@@ -49,11 +49,6 @@ interface TranslatingStartState extends Point {
   points?: Point[];
 }
 
-interface RotatingStartState extends Point {
-  angle: number;
-
-}
-
 const Canvas: React.FC<CanvasProps> = ({
   elements,
   setElements,
@@ -75,8 +70,8 @@ const Canvas: React.FC<CanvasProps> = ({
   const [originalElements, setOriginalElements] = useState<DrawElement[]>([]);
   const [translationStartPositions, setTranslationStartPositions] = useState<Record<string, TranslatingStartState>>({});
   const [isRotating, setIsRotating] = useState(false);
-  const [rotationStartAngle, setRotationStartAngle] = useState<RotatingStartState | null>(null);
-
+  const [rotationStartPoint, setRotationStartPoint] = useState<Point | null>(null);
+  const ROTATION_THRESHOLD = 0.01; // radians (~0.57 degrees)
   // Redraw the canvas
   const redrawCanvas = () => {
     const canvas = canvasRef.current;
@@ -482,10 +477,81 @@ const Canvas: React.FC<CanvasProps> = ({
     }
   };
 
+  const checkRotateHandle = (point: Point) => {
+    if (selectedElementIds.length === 0)
+      return false;
+    const selectedElements = selectedElementIds.map(id => elements.find(el => el.id === id));
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+    selectedElements.forEach((el) => {
+      if (!el) return;
+      minX = Math.min(minX, el.x);
+      minY = Math.min(minY, el.y);
+      maxX = Math.max(maxX, el.x + el.width);
+      maxY = Math.max(maxY, el.y + el.height);
+    });
+
+    const width = maxX - minX;
+
+    // Check if point is near the top-center of the selection box (e.g., within a small radius)
+    const handleX = minX + width / 2;
+    const handleY = minY - 24; // usually above the box
+    const radius = 12; // px tolerance
+
+    const dx = point.x - handleX;
+    const dy = point.y - handleY;
+    return dx * dx + dy * dy <= radius * radius;
+  };
+
+  const rotateElements = (currentPoint: Point) => {
+    if (selectedElementIds.length === 0 || !rotationStartPoint) return;
+
+    // Find the center of the bounding box for selected elements
+    const selectedElements = elements.filter(el => selectedElementIds.includes(el.id));
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    selectedElements.forEach(el => {
+      minX = Math.min(minX, el.x);
+      minY = Math.min(minY, el.y);
+      maxX = Math.max(maxX, el.x + el.width);
+      maxY = Math.max(maxY, el.y + el.height);
+    });
+    const centerX = minX + (maxX - minX) / 2;
+    const centerY = minY + (maxY - minY) / 2;
+
+    // Compute angle delta incrementally
+    const prevAngle = Math.atan2(rotationStartPoint.y - centerY, rotationStartPoint.x - centerX);
+    const currentAngle = Math.atan2(currentPoint.y - centerY, currentPoint.x - centerX);
+    const angleDelta = currentAngle - prevAngle;
+
+    // Only apply if the change is significant
+    if (Math.abs(angleDelta) > ROTATION_THRESHOLD) {
+      setElements(prevElements =>
+        prevElements.map(el => {
+          if (!selectedElementIds.includes(el.id)) return el;
+          return {
+            ...el,
+            angle: ((el.angle || 0) + angleDelta) % (2 * Math.PI),
+          };
+        })
+      );
+
+      // Update reference point for smoother continuous dragging
+      setRotationStartPoint(currentPoint);
+    }
+  };
+
+
   // Update cursor
   const updateCursor = (point: Point) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
+    // check for rotation
+    if (checkRotateHandle(point)) {
+      canvas.style.cursor = "url('/rotate-icon.png') 16 16, auto";
+      return;
+    }
 
     const resizeDir = checkResizeHandle(point);
     if (resizeDir) {
@@ -503,16 +569,19 @@ const Canvas: React.FC<CanvasProps> = ({
     } else {
       canvas.style.cursor = tool === 'selection' ? 'default' : 'crosshair';
     }
+
   };
-
-  // const checkRotateHandle = (point : Point)=>{
-
-  // }
 
   // Handle mouse down
   const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const point = getCoordinates(event);
     setStartPoint(point);
+
+    // Check for rotation
+    if (selectedElementIds.length > 0) {
+      setIsRotating(checkRotateHandle(point));
+      setRotationStartPoint(point);
+    }
 
     // Check for resize first
     const resizeDir = checkResizeHandle(point);
@@ -537,7 +606,7 @@ const Canvas: React.FC<CanvasProps> = ({
           );
         }
       }
-      
+
       // Store original positions for all selected elements
       const positions: Record<string, TranslatingStartState> = {};
       elements.forEach(el => {
@@ -554,11 +623,6 @@ const Canvas: React.FC<CanvasProps> = ({
       setTranslationStartPositions(positions);
       return;
     }
-
-    // // check for rotation
-    // if(checkRotateHandle(point)){
-
-    // }
 
     setIsDrawing(true);
 
@@ -595,6 +659,18 @@ const Canvas: React.FC<CanvasProps> = ({
     const currentPoint = getCoordinates(event);
     const deltaX = currentPoint.x - startPoint.x;
     const deltaY = currentPoint.y - startPoint.y;
+
+    if (isRotating) {
+      rotateElements(currentPoint);
+      redrawCanvas();
+      // May have to draw resize handles, not sure
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        drawResizeHandles(ctx!);
+      }
+      return;
+    }
 
     if (isResizing && resizeDirection) {
       resizeElements(resizeDirection, startPoint, currentPoint);
