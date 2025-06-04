@@ -1,10 +1,9 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import Canvas from './components/Canvas';
-// import Canvas from './components/Canvas/Canvas';
 import Toolbar from './components/Toolbar';
 import PropertyPanel from './components/PropertyPanel';
 import TextEditor from './components/TextEditor';
-import { DrawElement, ElementType, Point, ElementStyle, TextElement } from './types';
+import { DrawElement, ElementType, Point, ElementStyle } from './types';
 import { useElementOperations } from './hooks/useElementOperations';
 
 function App() {
@@ -60,14 +59,10 @@ function App() {
   });
 
   // Handle text editing
-  const handleTextEdit = useCallback((element: TextElement) => {
+  const handleTextEdit = useCallback((element: DrawElement) => {
     setEditingText({
-      id: element.id,
+      ...element, 
       text: element.text || '',
-      x: element.x,
-      y: element.y,
-      width: element.width,
-      height: element.height,
       style: element.style
     });
   }, []);
@@ -186,19 +181,6 @@ function App() {
     <div className="w-screen h-screen overflow-hidden bg-gray-50 relative">
       {/* Canvas */}
       <div className="w-full h-full relative">
-        {/* <Canvas
-          elements={elements}
-          setElements={setElements}
-          tool={activeTool}
-          selectedElementIds={selectedElementIds}
-          setSelectedElementIds={setSelectedElementIds}
-          scale={scale}
-          panOffset={panOffset}
-          selectionBox={selectionBox}
-          setSelectionBox={setSelectionBox}
-          onElementComplete={handleElementComplete}
-          onTextEdit={handleTextEdit}
-        /> */}
         <Canvas
           elements={elements}
           setElements={setElements}

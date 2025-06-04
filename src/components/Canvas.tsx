@@ -1,13 +1,13 @@
 // TODOs :
-// 5. Eraser
 // 6. Undo/Redo Feature
-// 8. Add images to the diagram
+// 5. Eraser --> DONE
 // 7. Fix the fucking rhombus --> DONE
 // 4. Arrow and Line resize doesn't work -->DONE
 // 2. Textbox --> Done
 // 3. Text in Elements --> Partially Done (Using backspace deletes the element)
 // 1. Rotating Elements -->Partially Done (Group elements still rotate about their own axis, instead of a group center. Needs fixing
 //                                         Resize handles are hard to locate after rotating)
+
 import React, { useRef, useState, useEffect } from 'react';
 import { ArrowElement, DrawElement, ElementType, LineElement, Point, TextElement } from '../types';
 import { renderElement } from '../utils/renderElements';
@@ -56,6 +56,7 @@ const Canvas: React.FC<CanvasProps> = ({
   setSelectedElementIds,
   scale,
   panOffset,
+  onTextEdit,
   selectionBox,
   setSelectionBox,
 }) => {
@@ -70,43 +71,7 @@ const Canvas: React.FC<CanvasProps> = ({
   const [translationStartPositions, setTranslationStartPositions] = useState<Record<string, TranslatingStartState>>({});
   const [isRotating, setIsRotating] = useState(false);
   const [rotationStartPoint, setRotationStartPoint] = useState<Point | null>(null);
-  const [isEditingText, setIsEditingText] = useState(false);
-  const [editingElementId, setEditingElementId] = useState<string | null>(null);
   const ROTATION_THRESHOLD = 0.01;
-
-  // Handle text input
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!editingElementId || !isEditingText) return;
-      if (e.key === 'Escape') {
-        setIsEditingText(false);
-        setEditingElementId(null);
-        return;
-      }
-
-      setElements(prevElements => 
-        prevElements.map(el => {
-          if (el.id === editingElementId) {
-            if (e.key === 'Backspace') {
-              return {
-                ...el,
-                text: el.text?.slice(0, -1) || ''
-              };
-            } else if (e.key.length === 1) {
-              return {
-                ...el,
-                text: (el.text || '') + e.key
-              };
-            }
-          }
-          return el;
-        })
-      );
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [editingElementId, isEditingText]);
 
   const redrawCanvas = () => {
     const canvas = canvasRef.current;
@@ -191,9 +156,12 @@ const Canvas: React.FC<CanvasProps> = ({
     
     if (clickedElement) {
       setSelectedElementIds([clickedElement.id]);
-      setIsEditingText(true);
-      setEditingElementId(clickedElement.id);
+      onTextEdit(clickedElement as TextElement);
     }
+    // if (clickedElement && clickedElement.type === 'text') {
+    //   setSelectedElementIds([clickedElement.id]);
+    //   onTextEdit(clickedElement as TextElement);
+    // }
   };
 
   const getRotatedCorners = (element: DrawElement): Point[] => {
@@ -492,9 +460,29 @@ const Canvas: React.FC<CanvasProps> = ({
   const createElement = (type: ElementType, start: Point): DrawElement | null => {
     const id = generateId();
 
+    // All elements can have text, so always call onTextEdit if tool is 'text'
+    if (type === 'text') {
+      const textElement: DrawElement = {
+        id,
+        type: 'text',
+        x: start.x,
+        y: start.y,
+        width: 200,
+        height: 24,
+        angle: 0,
+        style: { ...defaultStyle },
+        isSelected: true,
+        text: ''
+      };
+      onTextEdit(textElement as TextElement);
+      return textElement;
+    }
+
+    // For other types, create the element and call onTextEdit if tool is 'text'
+    let element: DrawElement | null = null;
     switch (type) {
       case 'freedraw':
-        return {
+        element = {
           id,
           type: 'freedraw',
           points: [start],
@@ -507,8 +495,9 @@ const Canvas: React.FC<CanvasProps> = ({
           isSelected: false,
           text: ''
         };
+        break;
       case 'rectangle':
-        return {
+        element = {
           id,
           type: 'rectangle',
           x: start.x,
@@ -520,8 +509,9 @@ const Canvas: React.FC<CanvasProps> = ({
           isSelected: false,
           text: ''
         };
+        break;
       case 'ellipse':
-        return {
+        element = {
           id,
           type: 'ellipse',
           x: start.x,
@@ -533,8 +523,9 @@ const Canvas: React.FC<CanvasProps> = ({
           isSelected: false,
           text: ''
         };
+        break;
       case 'arrow':
-        return {
+        element = {
           id,
           type: 'arrow',
           startPoint: start,
@@ -548,8 +539,9 @@ const Canvas: React.FC<CanvasProps> = ({
           isSelected: false,
           text: ''
         };
+        break;
       case 'line':
-        return {
+        element = {
           id,
           type: 'line',
           startPoint: start,
@@ -563,8 +555,9 @@ const Canvas: React.FC<CanvasProps> = ({
           isSelected: false,
           text: ''
         };
+        break;
       case 'diamond':
-        return {
+        element = {
           id,
           type: 'diamond',
           x: start.x,
@@ -576,8 +569,9 @@ const Canvas: React.FC<CanvasProps> = ({
           isSelected: false,
           text: ''
         };
+        break;
       case 'rhombus':
-        return {
+        element = {
           id,
           type: 'rhombus',
           x: start.x,
@@ -589,27 +583,18 @@ const Canvas: React.FC<CanvasProps> = ({
           isSelected: false,
           text: ''
         };
-      case 'text': {
-        const textElement = {
-          id,
-          type: 'text',
-          x: start.x,
-          y: start.y,
-          width: 200,
-          height: 24,
-          angle: 0,
-          style: { ...defaultStyle },
-          isSelected: true,
-          text: ''
-        };
-        // Immediately set editing mode for text elements
-        setIsEditingText(true);
-        setEditingElementId(id);
-        return textElement;
-      }
+        break;
       default:
         return null;
     }
+
+    // If the tool is 'text', trigger text editing for any shape
+    if (tool === 'text' && element) {
+      element.isSelected = true;
+      onTextEdit(element as TextElement);
+    }
+
+    return element;
   };
 
   const findElementAtPosition = (point: Point): DrawElement | null => {
@@ -769,13 +754,6 @@ const Canvas: React.FC<CanvasProps> = ({
   };
 
   const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
-    // If we're editing text, clicking outside should stop editing
-    if (isEditingText && editingElementId) {
-      setIsEditingText(false);
-      setEditingElementId(null);
-      return;
-    }
-
     const point = getCoordinates(event);
     setStartPoint(point);
 
