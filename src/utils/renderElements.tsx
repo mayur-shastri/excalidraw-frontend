@@ -1,4 +1,4 @@
-import { DrawElement, FreedrawElement, ArrowElement, LineElement, ResizeHandle, TextElement } from '../types';
+import { ArrowElement, DrawElement, FreedrawElement, LineElement, ResizeHandle, TextElement } from "../types";
 
 export const renderElement = (ctx: CanvasRenderingContext2D, element: DrawElement, multiSelectionFlag : boolean) => {
   const { style, isSelected } = element;
@@ -46,6 +46,16 @@ export const renderElement = (ctx: CanvasRenderingContext2D, element: DrawElemen
       break;
   }
   
+  // Draw centered text for all elements except freedraw and line (unless you want it for those too)
+  if (
+    element.text &&
+    element.text.trim() !== '' &&
+    element.type !== 'freedraw' &&
+    element.type !== 'line'
+  ) {
+    renderCenteredText(ctx, element);
+  }
+  
   if (isSelected && !multiSelectionFlag) {
     drawSelectionOutline(ctx, element);
   }
@@ -54,11 +64,8 @@ export const renderElement = (ctx: CanvasRenderingContext2D, element: DrawElemen
 };
 
 const renderText = (ctx: CanvasRenderingContext2D, element: TextElement) => {
-  const { x, y, style } = element;
-  
-  ctx.font = `${style.fontSize || 16}px ${style.fontFamily || 'Arial'}`;
-  ctx.fillStyle = style.strokeColor;
-  ctx.fillText(element.text || '', x, y + (style.fontSize || 16));
+  // For text elements, center the text in the bounding box
+  renderCenteredText(ctx, element);
 };
 
 const renderFreedraw = (ctx: CanvasRenderingContext2D, element: FreedrawElement) => {
@@ -126,17 +133,12 @@ const renderDiamond = (ctx: CanvasRenderingContext2D, element: DrawElement) => {
 
 const renderRhombus = (ctx: CanvasRenderingContext2D, element: DrawElement) => {
   const { x, y, width, height, style } = element;
-  // Skew factor: how much to skew horizontally (positive = right, negative = left)
-  const skew = width * 0.25; // adjust this factor as needed
+  const skew = width * 0.25;
 
   ctx.beginPath();
-  // Top-left
   ctx.moveTo(x + skew, y);
-  // Top-right
   ctx.lineTo(x + width, y);
-  // Bottom-right
   ctx.lineTo(x + width - skew, y + height);
-  // Bottom-left
   ctx.lineTo(x, y + height);
   ctx.closePath();
 
@@ -170,6 +172,11 @@ const renderArrow = (ctx: CanvasRenderingContext2D, element: ArrowElement) => {
     endPoint.y - headLength * Math.sin(angle + Math.PI / 6)
   );
   ctx.stroke();
+
+  // Draw centered text for arrow if present
+  if (element.text && element.text.trim() !== '') {
+    renderCenteredText(ctx, element);
+  }
 };
 
 const renderLine = (ctx: CanvasRenderingContext2D, element: LineElement) => {
@@ -179,6 +186,36 @@ const renderLine = (ctx: CanvasRenderingContext2D, element: LineElement) => {
   ctx.moveTo(startPoint.x, startPoint.y);
   ctx.lineTo(endPoint.x, endPoint.y);
   ctx.stroke();
+
+  // Draw centered text for line if present
+  if (element.text && element.text.trim() !== '') {
+    renderCenteredText(ctx, element);
+  }
+};
+
+const renderCenteredText = (ctx: CanvasRenderingContext2D, element: any) => {
+  const { x, y, width, height, style, text } = element;
+  if (!text || text.trim() === '') return;
+
+  // Default font settings
+  const fontSize = style?.fontSize || 16;
+  const fontFamily = style?.fontFamily || 'Arial';
+  ctx.font = `${fontSize}px ${fontFamily}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = style?.strokeColor || '#000';
+
+  let centerX = x + (width ? width / 2 : 0);
+  let centerY = y + (height ? height / 2 : 0);
+
+  // For lines/arrows, center between startPoint and endPoint
+  if (element.type === 'line' || element.type === 'arrow') {
+    const { startPoint, endPoint } = element;
+    centerX = (startPoint.x + endPoint.x) / 2;
+    centerY = (startPoint.y + endPoint.y) / 2;
+  }
+
+  ctx.fillText(text, centerX, centerY);
 };
 
 const drawSelectionOutline = (ctx: CanvasRenderingContext2D, element: DrawElement) => {

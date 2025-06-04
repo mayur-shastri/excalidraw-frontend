@@ -28,6 +28,7 @@ export type ElementBase = {
   style: ElementStyle;
   isSelected: boolean;
   text?: string;
+  isMarkedForDeletion? : boolean;
 };
 
 export type FreedrawElement = ElementBase & {
