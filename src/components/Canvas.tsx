@@ -1,5 +1,5 @@
 // TODOs :
-// 6. Undo/Redo Feature
+// 6. Undo/Redo Feature -->DONE
 // 5. Eraser --> DONE
 // 7. Fix the fucking rhombus --> DONE
 // 4. Arrow and Line resize doesn't work -->DONE

@@ -6,10 +6,18 @@ import TextEditor from './components/TextEditor';
 import { DrawElement, ElementType, Point, ElementStyle } from './types';
 import { useElementOperations } from './hooks/useElementOperations';
 
+function areElementsEqual(a: DrawElement[], b: DrawElement[]) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
 function App() {
   // State for drawing elements
   const [elements, setElements] = useState<DrawElement[]>([]);
   
+  // Undo/Redo stacks
+  const [undoStack, setUndoStack] = useState<DrawElement[][]>([]);
+  const [redoStack, setRedoStack] = useState<DrawElement[][]>([]);
+
   // State for the currently selected tool
   const [activeTool, setActiveTool] = useState<ElementType>('selection');
   
@@ -58,6 +66,66 @@ function App() {
     setSelectedElementIds,
   });
 
+  // Wrap setElements to push to undo stack (but not on undo/redo)
+  const setElementsWithUndo = useCallback((updater: (prev: DrawElement[]) => DrawElement[]) => {
+    setElements(prev => {
+      const updated = updater(prev);
+      // Only push to undo stack if the update actually changes the state
+      if (!areElementsEqual(prev, updated)) {
+        setUndoStack(stack => {
+          if (stack.length === 0 || !areElementsEqual(stack[stack.length - 1], prev)) {
+            const slicedStack = stack.length > 50 ? stack.slice(1) : stack;
+            // Only remember last 50 states
+            return [...slicedStack, prev];
+          }
+          return stack;
+        });
+        setRedoStack([]);
+      }
+      return updated;
+    });
+  }, []);
+
+  // Undo function
+  const handleUndo = useCallback(() => {
+    setUndoStack(prevUndo => {
+      if (prevUndo.length === 0) return prevUndo;
+      const prevElements = prevUndo[prevUndo.length - 1];
+      setElements(currentElements => {
+        setRedoStack(prevRedo => {
+          if (prevRedo.length === 0 || !areElementsEqual(prevRedo[prevRedo.length - 1], currentElements)) {
+            const slicedRedoStack = prevRedo.length > 50 ? prevRedo.slice(1) : prevRedo;
+            return [...slicedRedoStack, currentElements];
+          }
+          return prevRedo;
+        });
+        return prevElements;
+      });
+      // Remove the last state from undoStack
+      return prevUndo.slice(0, -1);
+    });
+  }, []);
+
+  // Redo function
+  const handleRedo = useCallback(() => {
+    setRedoStack(prevRedo => {
+      if (prevRedo.length === 0) return prevRedo;
+      const nextElements = prevRedo[prevRedo.length - 1];
+      setElements(currentElements => {
+        setUndoStack(prevUndo => {
+          if (prevUndo.length === 0 || !areElementsEqual(prevUndo[prevUndo.length - 1], currentElements)) {
+            const slicedUndo = prevUndo.length > 50 ? prevUndo.slice(1) : prevUndo;
+            return [...slicedUndo, currentElements];
+          }
+          return prevUndo;
+        });
+        return nextElements;
+      });
+      // Remove the last state from redoStack
+      return prevRedo.slice(0, -1);
+    });
+  }, []);
+
   // Handle text editing
   const handleTextEdit = useCallback((element: DrawElement) => {
     setEditingText({
@@ -71,14 +139,14 @@ function App() {
   const handleTextSave = useCallback((text: string, style: Partial<ElementStyle>) => {
     if (!editingText) return;
 
-    setElements(prev => prev.map(el => 
+    setElementsWithUndo(prev => prev.map(el => 
       el.id === editingText.id 
         ? { ...el, text, style: { ...el.style, ...style } }
         : el
     ));
     setEditingText(null);
     setActiveTool('selection'); // Reset to selection tool after editing
-  }, [editingText]);
+  }, [editingText, setElementsWithUndo]);
 
   // Reset to selection tool after drawing
   const handleElementComplete = useCallback(() => {
@@ -114,14 +182,17 @@ function App() {
     }
     
     if (e.key === 'z' && (e.ctrlKey || e.metaKey)) {
-      // Undo functionality would go here
+      handleUndo();
+    }
+    if (e.key === 'y' && (e.ctrlKey || e.metaKey)) {
+      handleRedo();
     }
     
     if (e.key === ' ' && !isPanning) {
       setIsPanning(true);
       document.body.style.cursor = 'grab';
     }
-  }, [deleteSelectedElements, isPanning]);
+  }, [deleteSelectedElements, isPanning, handleUndo, handleRedo]);
 
   const handleKeyUp = useCallback((e: KeyboardEvent) => {
     if (e.key === ' ') {
@@ -183,7 +254,7 @@ function App() {
       <div className="w-full h-full relative">
         <Canvas
           elements={elements}
-          setElements={setElements}
+          setElements={setElementsWithUndo}
           tool={activeTool}
           selectedElementIds={selectedElementIds}
           setSelectedElementIds={setSelectedElementIds}
@@ -218,6 +289,10 @@ function App() {
       <Toolbar 
         activeTool={activeTool} 
         setActiveTool={setActiveTool} 
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        canUndo={undoStack.length > 0}
+        canRedo={redoStack.length > 0}
       />
       
       {/* Zoom Display */}
