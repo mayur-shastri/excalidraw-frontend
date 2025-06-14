@@ -28,7 +28,7 @@ export type ElementBase = {
   style: ElementStyle;
   isSelected: boolean;
   text?: string;
-  isMarkedForDeletion? : boolean;
+  isMarkedForDeletion?: boolean;
 };
 
 export type FreedrawElement = ElementBase & {
@@ -70,10 +70,10 @@ export type TextElement = ElementBase & {
 };
 
 export type SelectionOutline = ElementBase & {
-  type : 'selection-outline';
+  type: 'selection-outline';
 }
 
-export type DrawElement = 
+export type DrawElement =
   | FreedrawElement
   | RectangleElement
   | EllipseElement
@@ -116,4 +116,12 @@ export interface CanvasProps {
     height: number;
     isActive: boolean;
   } | null>>;
+}
+
+export type ResizeDirection = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw' | null;
+
+export interface TranslatingStartState extends Point {
+  startPoint?: Point;
+  endPoint?: Point;
+  points?: Point[];
 }

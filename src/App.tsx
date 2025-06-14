@@ -1,10 +1,11 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import Canvas from './components/Canvas';
 import Toolbar from './components/Toolbar';
 import PropertyPanel from './components/PropertyPanel';
 import TextEditor from './components/TextEditor';
 import { DrawElement, ElementType, Point, ElementStyle } from './types';
 import { useElementOperations } from './hooks/useElementOperations';
+import { CanvasProvider } from './contexts/CanvasContext/CanvasProvider';
+import Canvas from './components/Canvas/Canvas';
 
 function areElementsEqual(a: DrawElement[], b: DrawElement[]) {
   return JSON.stringify(a) === JSON.stringify(b);
@@ -13,23 +14,23 @@ function areElementsEqual(a: DrawElement[], b: DrawElement[]) {
 function App() {
   // State for drawing elements
   const [elements, setElements] = useState<DrawElement[]>([]);
-  
+
   // Undo/Redo stacks
   const [undoStack, setUndoStack] = useState<DrawElement[][]>([]);
   const [redoStack, setRedoStack] = useState<DrawElement[][]>([]);
 
   // State for the currently selected tool
   const [activeTool, setActiveTool] = useState<ElementType>('selection');
-  
+
   // State for selected elements
   const [selectedElementIds, setSelectedElementIds] = useState<string[]>([]);
-  
+
   // State for zoom and pan
   const [scale, setScale] = useState<number>(1);
   const [panOffset, setPanOffset] = useState<Point>({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState<boolean>(false);
   const [lastMousePos, setLastMousePos] = useState<Point>({ x: 0, y: 0 });
-  
+
   // State for selection box
   const [selectionBox, setSelectionBox] = useState<{
     startX: number;
@@ -129,7 +130,7 @@ function App() {
   // Handle text editing
   const handleTextEdit = useCallback((element: DrawElement) => {
     setEditingText({
-      ...element, 
+      ...element,
       text: element.text || '',
       style: element.style
     });
@@ -139,8 +140,8 @@ function App() {
   const handleTextSave = useCallback((text: string, style: Partial<ElementStyle>) => {
     if (!editingText) return;
 
-    setElementsWithUndo(prev => prev.map(el => 
-      el.id === editingText.id 
+    setElementsWithUndo(prev => prev.map(el =>
+      el.id === editingText.id
         ? { ...el, text, style: { ...el.style, ...style } }
         : el
     ));
@@ -156,19 +157,19 @@ function App() {
   // Handle wheel for zooming
   const handleWheel = useCallback((e: WheelEvent) => {
     e.preventDefault();
-    
-    const newScale = e.deltaY < 0 
-      ? Math.min(scale * 1.1, 5) 
+
+    const newScale = e.deltaY < 0
+      ? Math.min(scale * 1.1, 5)
       : Math.max(scale / 1.1, 0.1);
-    
+
     const mouseX = e.clientX;
     const mouseY = e.clientY;
-    
+
     const newPanOffset = {
       x: panOffset.x - (mouseX - panOffset.x) * (newScale / scale - 1),
       y: panOffset.y - (mouseY - panOffset.y) * (newScale / scale - 1),
     };
-    
+
     setScale(newScale);
     setPanOffset(newPanOffset);
   }, [scale, panOffset]);
@@ -180,14 +181,14 @@ function App() {
         deleteSelectedElements();
       }
     }
-    
+
     if (e.key === 'z' && (e.ctrlKey || e.metaKey)) {
       handleUndo();
     }
     if (e.key === 'y' && (e.ctrlKey || e.metaKey)) {
       handleRedo();
     }
-    
+
     if (e.key === ' ' && !isPanning) {
       setIsPanning(true);
       document.body.style.cursor = 'grab';
@@ -213,12 +214,12 @@ function App() {
     if (isPanning && e.buttons === 1) {
       const dx = e.clientX - lastMousePos.x;
       const dy = e.clientY - lastMousePos.y;
-      
+
       setPanOffset({
         x: panOffset.x + dx,
         y: panOffset.y + dy,
       });
-      
+
       setLastMousePos({ x: e.clientX, y: e.clientY });
     }
   }, [isPanning, lastMousePos, panOffset]);
@@ -237,7 +238,7 @@ function App() {
     window.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
-    
+
     return () => {
       window.removeEventListener('wheel', handleWheel);
       window.removeEventListener('keydown', handleKeyDown);
@@ -249,57 +250,61 @@ function App() {
   }, [handleWheel, handleKeyDown, handleKeyUp, handleMouseDown, handleMouseMove, handleMouseUp]);
 
   return (
-    <div className="w-screen h-screen overflow-hidden bg-gray-50 relative">
-      {/* Canvas */}
-      <div className="w-full h-full relative">
-        <Canvas
-          elements={elements}
-          setElements={setElementsWithUndo}
-          tool={activeTool}
-          selectedElementIds={selectedElementIds}
-          setSelectedElementIds={setSelectedElementIds}
-          scale={scale}
-          panOffset={panOffset}
-          selectionBox={selectionBox}
-          setSelectionBox={setSelectionBox}
-          onElementComplete={handleElementComplete}
-          onTextEdit={handleTextEdit}
+    <CanvasProvider
+      value={{
+        elements,
+        setElements: setElementsWithUndo,
+        tool: activeTool,
+        selectedElementIds,
+        setSelectedElementIds,
+        scale,
+        panOffset,
+        selectionBox,
+        setSelectionBox,
+        onElementComplete: handleElementComplete,
+        onTextEdit: handleTextEdit,
+      }}
+    >
+      <div className="w-screen h-screen overflow-hidden bg-gray-50 relative">
+        {/* Canvas */}
+        <div className="w-full h-full relative">
+          <Canvas/>
+        </div>
+
+        {/* Text Editor */}
+        {editingText && (
+          <TextEditor
+            {...editingText}
+            onSave={handleTextSave}
+            onCancel={() => setEditingText(null)}
+          />
+        )}
+
+        {/* Property Panel */}
+        {selectedElements.length > 0 && (
+          <PropertyPanel
+            selectedElements={selectedElements}
+            onStyleChange={updateStyle}
+            onDelete={deleteSelectedElements}
+          />
+        )}
+
+        {/* Toolbar */}
+        <Toolbar
+          activeTool={activeTool}
+          setActiveTool={setActiveTool}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          canUndo={undoStack.length > 0}
+          canRedo={redoStack.length > 0}
         />
+
+        {/* Zoom Display */}
+        <div className="absolute bottom-4 right-4 bg-white rounded-md shadow-md px-2 py-1 text-sm">
+          {Math.round(scale * 100)}%
+        </div>
       </div>
-      
-      {/* Text Editor */}
-      {editingText && (
-        <TextEditor
-          {...editingText}
-          onSave={handleTextSave}
-          onCancel={() => setEditingText(null)}
-        />
-      )}
-      
-      {/* Property Panel */}
-      {selectedElements.length > 0 && (
-        <PropertyPanel 
-          selectedElements={selectedElements}
-          onStyleChange={updateStyle}
-          onDelete={deleteSelectedElements}
-        />
-      )}
-      
-      {/* Toolbar */}
-      <Toolbar 
-        activeTool={activeTool} 
-        setActiveTool={setActiveTool} 
-        onUndo={handleUndo}
-        onRedo={handleRedo}
-        canUndo={undoStack.length > 0}
-        canRedo={redoStack.length > 0}
-      />
-      
-      {/* Zoom Display */}
-      <div className="absolute bottom-4 right-4 bg-white rounded-md shadow-md px-2 py-1 text-sm">
-        {Math.round(scale * 100)}%
-      </div>
-    </div>
+    </CanvasProvider>
   );
 }
 
