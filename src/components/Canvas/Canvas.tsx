@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { ArrowElement, CanvasProps, DrawElement, ElementType, LineElement, Point, ResizeDirection, TextElement } from '../../types';
+import { ArrowElement, DrawElement, ElementType, LineElement, Point, ResizeDirection, TextElement } from '../../types';
 import { renderElement } from '../../utils/renderElements';
 import { generateId } from '../../utils/helpers';
 import { useDrawOnCanvas } from '../../hooks/useDrawOnCanvas';
@@ -10,7 +10,7 @@ import { useTranslateElements } from '../../hooks/useTranslateElements';
 import { useCanvasContext } from '../../contexts/CanvasContext/CanvasContext';
 import { defaultStyle } from '../../constants';
 
-const Canvas: React.FC<CanvasProps> = () => {
+const Canvas: React.FC = () => {
 
   const {
     elements,

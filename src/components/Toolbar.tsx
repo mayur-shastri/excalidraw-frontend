@@ -32,7 +32,7 @@ export default function Toolbar({ activeTool, setActiveTool, onUndo, onRedo, can
     { type: 'arrow', icon: 'arrow', label: 'Arrow' },
     { type: 'line', icon: 'line', label: 'Line' },
     { type: 'diamond', icon: 'diamond', label: 'Diamond' },
-    { type: 'rhombus', icon: 'diamond', label: 'Rhombus' },
+    { type: 'rhombus', icon: 'rhombus', label: 'Rhombus' },
     { type: 'text', icon: 'text', label: 'Text' },
     { type: 'eraser', icon: 'eraser', label: 'Eraser' },
   ];
@@ -46,6 +46,7 @@ export default function Toolbar({ activeTool, setActiveTool, onUndo, onRedo, can
       case 'arrow': return <ArrowUpRight size={20} />;
       case 'line': return <Minus size={20} />;
       case 'diamond': return <Diamond size={20} />;
+      case 'rhombus': return <Square size={20} className='-skew-x-12'/>;
       case 'text': return <Type size={20} />;
       case 'eraser': return <Eraser size={20} />;
       default: return <MousePointer size={20} />;

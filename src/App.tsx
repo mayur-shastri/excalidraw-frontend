@@ -1,4 +1,13 @@
-import React, { useState, useCallback, useEffect } from 'react';
+/*
+Todo:
+1. Fix rotation handle, element size change after rotation, 
+2. Make it more like eraser.io
+3. MCP server
+4. Collaboraion Feature
+5. Dark theme?
+*/
+
+import { useState, useCallback, useEffect } from 'react';
 import Toolbar from './components/Toolbar';
 import PropertyPanel from './components/PropertyPanel';
 import TextEditor from './components/TextEditor';
@@ -56,10 +65,6 @@ function App() {
     selectedElements,
     deleteSelectedElements,
     updateStyle,
-    startDragging,
-    dragElements,
-    stopDragging,
-    rotateElements,
   } = useElementOperations({
     elements,
     setElements,
