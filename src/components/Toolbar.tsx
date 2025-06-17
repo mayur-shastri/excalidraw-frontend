@@ -54,7 +54,7 @@ export default function Toolbar({ activeTool, setActiveTool, onUndo, onRedo, can
   };
 
   return (
-    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white rounded-lg shadow-md p-1 flex items-center">
+    <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-white rounded-lg shadow-md p-1 flex items-center">
       <button
         className={`p-2 rounded-md mx-1 text-gray-600 ${canUndo? "hover:bg-gray-50" : "text-gray-300"}`}
         onClick={onUndo}

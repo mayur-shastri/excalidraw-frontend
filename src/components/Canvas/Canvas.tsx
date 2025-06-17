@@ -23,6 +23,7 @@ const Canvas: React.FC = () => {
     onTextEdit,
     selectionBox,
     setSelectionBox,
+    onElementComplete,
   } = useCanvasContext();
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -464,6 +465,7 @@ const Canvas: React.FC = () => {
     if (isDrawing || isTranslating) {
       setIsDrawing(false);
       setCurrentElement(null);
+      onElementComplete();
     }
   };
 

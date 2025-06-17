@@ -34,7 +34,7 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
   const strokeWidths = [1, 2, 4, 8];
 
   return (
-    <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-white rounded-lg shadow-md p-3 flex items-center">
+    <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-white rounded-lg shadow-md p-3 flex items-center">
       <div className="mr-4">
         <p className="text-xs text-gray-500 mb-1">Stroke</p>
         <div className="flex space-x-1">
