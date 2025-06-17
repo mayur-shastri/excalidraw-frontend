@@ -34,8 +34,8 @@ const Canvas: React.FC = () => {
   const [currentElement, setCurrentElement] = useState<DrawElement | null>(null);
   const [resizeDirection, setResizeDirection] = useState<ResizeDirection>(null);
   const [isRotating, setIsRotating] = useState(false);
+  
   const { redrawCanvas } = useDrawOnCanvas(canvasRef, isDrawing);
-
   const { updateCursor, checkResizeHandle, checkRotateHandle, findElementAtPosition } = useCursorUtils(canvasRef);
   const {resizeElements, rotateElements, setOriginalElements, setRotationStartPoint} = useRotateAndResizeElements();
   const {translateElements, setTranslationStartPositions} = useTranslateElements();

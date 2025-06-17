@@ -1,9 +1,7 @@
 import React from 'react';
 import { DrawElement, ElementStyle } from '../types';
 import { 
-  Circle as CircleIcon, 
-  Square as SquareIcon, 
-  RotateCw
+  Square as SquareIcon,
 } from 'lucide-react';
 
 interface PropertyPanelProps {
@@ -126,14 +124,6 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
           className="w-24"
         />
       </div>
-      
-      <div className="ml-2">
-        <button 
-          className="p-2 rounded-md text-gray-600 hover:bg-gray-50"
-          title="Rotate"
-        >
-          <RotateCw size={16} />
-        </button>
         <button
           className="p-2 rounded-md text-red-600 hover:bg-red-50 ml-1"
           onClick={onDelete}
@@ -143,7 +133,6 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
             <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
           </svg>
         </button>
-      </div>
     </div>
   );
 };
