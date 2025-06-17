@@ -15,6 +15,7 @@ export type ElementStyle = {
   fontFamily?: string;
   textAlign?: 'left' | 'center' | 'right';
   text?: string;
+  cornerRadius? : number;
 };
 
 export type ElementBase = {

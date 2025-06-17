@@ -82,64 +82,112 @@ const renderFreedraw = (ctx: CanvasRenderingContext2D, element: FreedrawElement)
   
   ctx.stroke();
 };
+const getProportionalRadius = (width: number, height: number, base: number = 12) => {
+  // Use the smaller dimension to scale the radius, clamp to avoid too large radius
+  const minDim = Math.min(width, height);
+  return Math.max(2, Math.min(base, minDim / 4));
+};
 
 const renderRectangle = (ctx: CanvasRenderingContext2D, element: DrawElement) => {
   const { x, y, width, height, style } = element;
-  
+  const radius = getProportionalRadius(width, height, style.cornerRadius ?? 12);
+
   ctx.beginPath();
-  ctx.rect(x, y, width, height);
-  
+  // Draw rounded rectangle
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  ctx.lineTo(x + radius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+
   if (style.fillStyle === 'solid') {
     ctx.fill();
   }
-  
+
   ctx.stroke();
 };
 
 const renderEllipse = (ctx: CanvasRenderingContext2D, element: DrawElement) => {
   const { x, y, width, height, style } = element;
-  
+
   const centerX = x + width / 2;
   const centerY = y + height / 2;
   const radiusX = width / 2;
   const radiusY = height / 2;
-  
+
   ctx.beginPath();
   ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, 2 * Math.PI);
-  
+
   if (style.fillStyle === 'solid') {
     ctx.fill();
   }
-  
+
   ctx.stroke();
 };
 
 const renderDiamond = (ctx: CanvasRenderingContext2D, element: DrawElement) => {
   const { x, y, width, height, style } = element;
-  
+  const radius = getProportionalRadius(width, height, style.cornerRadius ?? 12);
+
+  // Calculate diamond points
+  const top = { x: x + width / 2, y: y };
+  const right = { x: x + width, y: y + height / 2 };
+  const bottom = { x: x + width / 2, y: y + height };
+  const left = { x: x, y: y + height / 2 };
+
   ctx.beginPath();
-  ctx.moveTo(x + width / 2, y);
-  ctx.lineTo(x + width, y + height / 2);
-  ctx.lineTo(x + width / 2, y + height);
-  ctx.lineTo(x, y + height / 2);
+  // Move to top, then draw lines with quadratic curves for rounded corners
+  ctx.moveTo(top.x - radius, top.y + radius);
+  ctx.quadraticCurveTo(top.x, top.y, top.x + radius, top.y + radius);
+
+  ctx.lineTo(right.x - radius, right.y - radius);
+  ctx.quadraticCurveTo(right.x, right.y, right.x - radius, right.y + radius);
+
+  ctx.lineTo(bottom.x + radius, bottom.y - radius);
+  ctx.quadraticCurveTo(bottom.x, bottom.y, bottom.x - radius, bottom.y - radius);
+
+  ctx.lineTo(left.x + radius, left.y + radius);
+  ctx.quadraticCurveTo(left.x, left.y, left.x + radius, left.y - radius);
+
   ctx.closePath();
-  
+
   if (style.fillStyle === 'solid') {
     ctx.fill();
   }
-  
+
   ctx.stroke();
 };
 
 const renderRhombus = (ctx: CanvasRenderingContext2D, element: DrawElement) => {
   const { x, y, width, height, style } = element;
   const skew = width * 0.25;
+  const radius = getProportionalRadius(width, height, style.cornerRadius ?? 12);
+
+  // Rhombus points
+  const topLeft = { x: x + skew, y: y };
+  const topRight = { x: x + width, y: y };
+  const bottomRight = { x: x + width - skew, y: y + height };
+  const bottomLeft = { x: x, y: y + height };
 
   ctx.beginPath();
-  ctx.moveTo(x + skew, y);
-  ctx.lineTo(x + width, y);
-  ctx.lineTo(x + width - skew, y + height);
-  ctx.lineTo(x, y + height);
+  ctx.moveTo(topLeft.x + radius, topLeft.y);
+  ctx.lineTo(topRight.x - radius, topRight.y);
+  ctx.quadraticCurveTo(topRight.x, topRight.y, topRight.x, topRight.y + radius);
+
+  ctx.lineTo(bottomRight.x + radius, bottomRight.y - radius);
+  ctx.quadraticCurveTo(bottomRight.x, bottomRight.y, bottomRight.x - radius, bottomRight.y);
+
+  ctx.lineTo(bottomLeft.x + radius, bottomLeft.y);
+  ctx.quadraticCurveTo(bottomLeft.x, bottomLeft.y, bottomLeft.x, bottomLeft.y - radius);
+
+  ctx.lineTo(topLeft.x - radius, topLeft.y + radius);
+  ctx.quadraticCurveTo(topLeft.x, topLeft.y, topLeft.x + radius, topLeft.y);
+
   ctx.closePath();
 
   if (style.fillStyle === 'solid') {
@@ -151,15 +199,15 @@ const renderRhombus = (ctx: CanvasRenderingContext2D, element: DrawElement) => {
 
 const renderArrow = (ctx: CanvasRenderingContext2D, element: ArrowElement) => {
   const { startPoint, endPoint, style } = element;
-  
+
   ctx.beginPath();
   ctx.moveTo(startPoint.x, startPoint.y);
   ctx.lineTo(endPoint.x, endPoint.y);
   ctx.stroke();
-  
+
   const headLength = 10 + style.strokeWidth;
   const angle = Math.atan2(endPoint.y - startPoint.y, endPoint.x - startPoint.x);
-  
+
   ctx.beginPath();
   ctx.moveTo(endPoint.x, endPoint.y);
   ctx.lineTo(
@@ -181,7 +229,7 @@ const renderArrow = (ctx: CanvasRenderingContext2D, element: ArrowElement) => {
 
 const renderLine = (ctx: CanvasRenderingContext2D, element: LineElement) => {
   const { startPoint, endPoint } = element;
-  
+
   ctx.beginPath();
   ctx.moveTo(startPoint.x, startPoint.y);
   ctx.lineTo(endPoint.x, endPoint.y);
@@ -225,7 +273,7 @@ const drawSelectionOutline = (ctx: CanvasRenderingContext2D, element: DrawElemen
   ctx.setLineDash([5, 5]);
   ctx.strokeRect(x - 4, y - 4, width + 8, height + 8);
   ctx.setLineDash([]);
-  
+
   const handleSize = 8;
   const handles: { position: ResizeHandle; x: number; y: number }[] = [
     { position: 'top-left', x: x - handleSize / 2, y: y - handleSize / 2 },
@@ -237,25 +285,25 @@ const drawSelectionOutline = (ctx: CanvasRenderingContext2D, element: DrawElemen
     { position: 'bottom', x: x + width / 2 - handleSize / 2, y: y + height - handleSize / 2 },
     { position: 'bottom-right', x: x + width - handleSize / 2, y: y + height - handleSize / 2 },
   ];
-  
+
   ctx.fillStyle = 'white';
   ctx.strokeStyle = '#4285f4';
   ctx.lineWidth = 1;
-  
+
   handles.forEach(handle => {
     ctx.beginPath();
     ctx.rect(handle.x, handle.y, handleSize, handleSize);
     ctx.fill();
     ctx.stroke();
   });
-  
+
   // Draw rotation handle
   const rotationHandleY = y - 30;
   ctx.beginPath();
   ctx.moveTo(x + width / 2, y - 10);
   ctx.lineTo(x + width / 2, rotationHandleY);
   ctx.stroke();
-  
+
   ctx.beginPath();
   ctx.arc(x + width / 2, rotationHandleY, 5, 0, 2 * Math.PI);
   ctx.fill();
