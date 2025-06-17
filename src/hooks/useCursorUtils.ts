@@ -27,37 +27,48 @@ export function useCursorUtils(canvasRef: React.RefObject<HTMLCanvasElement>) {
   };
 
   const checkResizeHandle = (point: Point): ResizeDirection => {
-    const selectedElements = elements.filter(el => selectedElementIds.includes(el.id));
-    if (selectedElements.length === 0) return null;
+    if (selectedElementIds.length !== 1) return null;
 
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    const el = elements.find(e => e.id === selectedElementIds[0]);
+    if (!el) return null;
 
-    selectedElements.forEach(element => {
-      const rotatedPoints = getRotatedCorners(element);
-      rotatedPoints.forEach(p => {
-        minX = Math.min(minX, p.x);
-        minY = Math.min(minY, p.y);
-        maxX = Math.max(maxX, p.x);
-        maxY = Math.max(maxY, p.y);
-      });
-    });
+    const { x, y, width, height, angle = 0 } = el;
+    const cx = x + width / 2;
+    const cy = y + height / 2;
 
-    const width = maxX - minX;
-    const height = maxY - minY;
     const handleSize = 8 / scale;
-    const tolerance = handleSize * 2;
+    const tolerance = handleSize * 1.5; // or tweak for UX
 
-    if (isPointInRect(point, minX - handleSize / 2, minY - handleSize / 2, handleSize, tolerance)) return 'nw';
-    if (isPointInRect(point, minX + width / 2 - handleSize / 2, minY - handleSize / 2, handleSize, tolerance)) return 'n';
-    if (isPointInRect(point, minX + width - handleSize / 2, minY - handleSize / 2, handleSize, tolerance)) return 'ne';
-    if (isPointInRect(point, minX + width - handleSize / 2, minY + height / 2 - handleSize / 2, handleSize, tolerance)) return 'e';
-    if (isPointInRect(point, minX + width - handleSize / 2, minY + height - handleSize / 2, handleSize, tolerance)) return 'se';
-    if (isPointInRect(point, minX + width / 2 - handleSize / 2, minY + height - handleSize / 2, handleSize, tolerance)) return 's';
-    if (isPointInRect(point, minX - handleSize / 2, minY + height - handleSize / 2, handleSize, tolerance)) return 'sw';
-    if (isPointInRect(point, minX - handleSize / 2, minY + height / 2 - handleSize / 2, handleSize, tolerance)) return 'w';
+    const directions: { dx: number; dy: number; dir: ResizeDirection }[] = [
+      { dx: -width / 2, dy: -height / 2, dir: 'nw' },
+      { dx: 0, dy: -height / 2, dir: 'n' },
+      { dx: width / 2, dy: -height / 2, dir: 'ne' },
+      { dx: width / 2, dy: 0, dir: 'e' },
+      { dx: width / 2, dy: height / 2, dir: 'se' },
+      { dx: 0, dy: height / 2, dir: 's' },
+      { dx: -width / 2, dy: height / 2, dir: 'sw' },
+      { dx: -width / 2, dy: 0, dir: 'w' },
+    ];
+
+    for (const { dx, dy, dir } of directions) {
+      // Rotate offset dx, dy around center
+      const rotatedX = dx * Math.cos(angle) - dy * Math.sin(angle);
+      const rotatedY = dx * Math.sin(angle) + dy * Math.cos(angle);
+      const handleX = cx + rotatedX;
+      const handleY = cy + rotatedY;
+
+      const dxToPoint = point.x - handleX;
+      const dyToPoint = point.y - handleY;
+      const distanceSq = dxToPoint * dxToPoint + dyToPoint * dyToPoint;
+
+      if (distanceSq <= tolerance * tolerance) {
+        return dir;
+      }
+    }
 
     return null;
   };
+
 
   const checkRotateHandle = (point: Point) => {
     if (selectedElementIds.length === 0) return false;
@@ -78,18 +89,33 @@ export function useCursorUtils(canvasRef: React.RefObject<HTMLCanvasElement>) {
     });
 
     const centerX = minX + (maxX - minX) / 2;
-    const centerY = minY + (maxY - minY) / 2;
-
-    const angle = selectedElements[0]?.angle || 0;
     const rotationHandleDistance = 24;
-    const topCenterX = centerX;
-    const topCenterY = minY - rotationHandleDistance;
-    const delX = topCenterX - centerX;
-    const delY = topCenterY - centerY;
-    const rotatedX = delX * Math.cos(angle) - delY * Math.sin(angle) + centerX;
-    const rotatedY = delX * Math.sin(angle) + delY * Math.cos(angle) + centerY;
-    const rotationHandleX = rotatedX;
-    const rotationHandleY = rotatedY;
+
+    let rotationHandleX: number, rotationHandleY: number;
+
+    if (selectedElements.length === 1) {
+      const element = selectedElements[0];
+      const angle = element.angle || 0;
+
+      // Element center
+      const cx = element.x + element.width / 2;
+      const cy = element.y + element.height / 2;
+
+      // Unrotated handle position (above top-center of the element)
+      const handleX = cx;
+      const handleY = element.y - rotationHandleDistance;
+
+      // Rotate handle position around the element center
+      const dx = handleX - cx;
+      const dy = handleY - cy;
+
+      rotationHandleX = dx * Math.cos(angle) - dy * Math.sin(angle) + cx;
+      rotationHandleY = dx * Math.sin(angle) + dy * Math.cos(angle) + cy;
+    } else {
+      // Multiple elements: selection box does NOT rotate, so handle is at top center of axis-aligned box
+      rotationHandleX = centerX;
+      rotationHandleY = minY - rotationHandleDistance;
+    }
 
     const radius = 12;
     const dx = point.x - rotationHandleX;
@@ -107,7 +133,7 @@ export function useCursorUtils(canvasRef: React.RefObject<HTMLCanvasElement>) {
     }
 
     if (checkRotateHandle(point)) {
-      canvas.style.cursor = "url('/rotate-icon.png') 16 16, auto";
+      canvas.style.cursor = "grab";
       return;
     }
 

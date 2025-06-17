@@ -1,6 +1,5 @@
 /*
 Todo:
-1. Fix rotation handle, element size change after rotation, 
 2. Make it more like eraser.io
   2.1 : Connectors instead of plain arrows
   2.2 : No grid

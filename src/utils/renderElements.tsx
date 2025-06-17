@@ -1,24 +1,24 @@
 import { ArrowElement, DrawElement, FreedrawElement, LineElement, ResizeHandle, TextElement } from "../types";
 
-export const renderElement = (ctx: CanvasRenderingContext2D, element: DrawElement, multiSelectionFlag : boolean) => {
+export const renderElement = (ctx: CanvasRenderingContext2D, element: DrawElement, multiSelectionFlag: boolean) => {
   const { style, isSelected } = element;
-  
+
   ctx.strokeStyle = style.strokeColor;
   ctx.fillStyle = style.backgroundColor;
   ctx.lineWidth = style.strokeWidth;
   ctx.globalAlpha = style.opacity;
-  
+
   ctx.save();
-  
+
   if (element.angle !== 0) {
     const centerX = element.x + element.width / 2;
     const centerY = element.y + element.height / 2;
-    
+
     ctx.translate(centerX, centerY);
     ctx.rotate(element.angle);
     ctx.translate(-centerX, -centerY);
   }
-  
+
   switch (element.type) {
     case 'freedraw':
       renderFreedraw(ctx, element as FreedrawElement);
@@ -45,7 +45,7 @@ export const renderElement = (ctx: CanvasRenderingContext2D, element: DrawElemen
       renderText(ctx, element as TextElement);
       break;
   }
-  
+
   // Draw centered text for all elements except freedraw and line (unless you want it for those too)
   if (
     element.text &&
@@ -55,11 +55,11 @@ export const renderElement = (ctx: CanvasRenderingContext2D, element: DrawElemen
   ) {
     renderCenteredText(ctx, element);
   }
-  
-  if (isSelected && !multiSelectionFlag) {
-    drawSelectionOutline(ctx, element);
+
+  if (isSelected) {
+    drawSelectionOutline(ctx, element, multiSelectionFlag);
   }
-  
+
   ctx.restore();
 };
 
@@ -70,16 +70,16 @@ const renderText = (ctx: CanvasRenderingContext2D, element: TextElement) => {
 
 const renderFreedraw = (ctx: CanvasRenderingContext2D, element: FreedrawElement) => {
   const { points } = element;
-  
+
   if (points.length < 2) return;
-  
+
   ctx.beginPath();
   ctx.moveTo(points[0].x, points[0].y);
-  
+
   for (let i = 1; i < points.length; i++) {
     ctx.lineTo(points[i].x, points[i].y);
   }
-  
+
   ctx.stroke();
 };
 const getProportionalRadius = (width: number, height: number, base: number = 12) => {
@@ -266,7 +266,7 @@ const renderCenteredText = (ctx: CanvasRenderingContext2D, element: any) => {
   ctx.fillText(text, centerX, centerY);
 };
 
-const drawSelectionOutline = (ctx: CanvasRenderingContext2D, element: DrawElement) => {
+const drawSelectionOutline = (ctx: CanvasRenderingContext2D, element: DrawElement, multiSelectionFlag : boolean) => {
   const { x, y, width, height } = element;
   ctx.strokeStyle = '#4285f4';
   ctx.lineWidth = 1;
@@ -298,14 +298,17 @@ const drawSelectionOutline = (ctx: CanvasRenderingContext2D, element: DrawElemen
   });
 
   // Draw rotation handle
-  const rotationHandleY = y - 30;
-  ctx.beginPath();
-  ctx.moveTo(x + width / 2, y - 10);
-  ctx.lineTo(x + width / 2, rotationHandleY);
-  ctx.stroke();
+  if (!multiSelectionFlag) {
+    const rotationHandleY = y - 30;
+    ctx.beginPath();
+    ctx.moveTo(x + width / 2, y - 10);
+    ctx.lineTo(x + width / 2, rotationHandleY);
+    ctx.stroke();
 
-  ctx.beginPath();
-  ctx.arc(x + width / 2, rotationHandleY, 5, 0, 2 * Math.PI);
-  ctx.fill();
-  ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x + width / 2, rotationHandleY, 5, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+  }
+
 };

@@ -63,7 +63,7 @@ export function useDrawOnCanvas(canvasRef: React.RefObject<HTMLCanvasElement>, i
         y: minY,
         width,
         height,
-        angle: selectedElements[0]?.angle || 0,
+        angle: 0,
         style: { ...defaultStyle },
         isSelected: true,
       };

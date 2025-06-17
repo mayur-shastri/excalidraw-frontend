@@ -193,6 +193,8 @@ export function useRotateAndResizeElements() {
 
         const selectedElements = elements.filter(el => selectedElementIds.includes(el.id));
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+        // Find bounding box of all rotated corners
         selectedElements.forEach(el => {
             const rotatedPoints = getRotatedCorners(el);
             rotatedPoints.forEach(p => {
@@ -202,6 +204,7 @@ export function useRotateAndResizeElements() {
                 maxY = Math.max(maxY, p.y);
             });
         });
+
         const centerX = minX + (maxX - minX) / 2;
         const centerY = minY + (maxY - minY) / 2;
 
@@ -213,8 +216,24 @@ export function useRotateAndResizeElements() {
             setElements(prevElements =>
                 prevElements.map(el => {
                     if (!selectedElementIds.includes(el.id)) return el;
+
+                    const cx = el.x + el.width / 2;
+                    const cy = el.y + el.height / 2;
+
+                    // Translate to group center, rotate, translate back
+                    const dx = cx - centerX;
+                    const dy = cy - centerY;
+
+                    const rotatedCx = centerX + (dx * Math.cos(angleDelta) - dy * Math.sin(angleDelta));
+                    const rotatedCy = centerY + (dx * Math.sin(angleDelta) + dy * Math.cos(angleDelta));
+
+                    const newX = rotatedCx - el.width / 2;
+                    const newY = rotatedCy - el.height / 2;
+
                     return {
                         ...el,
+                        x: newX,
+                        y: newY,
                         angle: ((el.angle || 0) + angleDelta) % (2 * Math.PI),
                     };
                 })
@@ -223,7 +242,8 @@ export function useRotateAndResizeElements() {
         }
     };
 
-    return {resizeElements, rotateElements, originalElements, setOriginalElements, rotationStartPoint, setRotationStartPoint};
+
+    return { resizeElements, rotateElements, originalElements, setOriginalElements, rotationStartPoint, setRotationStartPoint };
 
 }
 
