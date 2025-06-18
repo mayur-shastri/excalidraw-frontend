@@ -100,6 +100,7 @@ export interface CanvasProps {
   selectedElementIds: string[];
   setSelectedElementIds: React.Dispatch<React.SetStateAction<string[]>>;
   scale: number;
+  setScale : (prev : number)=>void;
   panOffset: Point;
   onElementComplete: () => void;
   onTextEdit: (element: TextElement) => void;

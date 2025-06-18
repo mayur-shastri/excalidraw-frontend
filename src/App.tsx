@@ -17,6 +17,7 @@ import { DrawElement, ElementType, Point, ElementStyle } from './types';
 import { useElementOperations } from './hooks/useElementOperations';
 import { CanvasProvider } from './contexts/CanvasContext/CanvasProvider';
 import Canvas from './components/Canvas/Canvas';
+import ZoomPanel from './components/ZoomPanel';
 
 function areElementsEqual(a: DrawElement[], b: DrawElement[]) {
   return JSON.stringify(a) === JSON.stringify(b);
@@ -265,6 +266,7 @@ function App() {
         selectedElementIds,
         setSelectedElementIds,
         scale,
+        setScale,
         panOffset,
         selectionBox,
         setSelectionBox,
@@ -275,7 +277,7 @@ function App() {
       <div className="w-screen h-screen overflow-hidden bg-gray-50 relative">
         {/* Canvas */}
         <div className="w-full h-full relative">
-          <Canvas/>
+          <Canvas />
         </div>
 
         {/* Text Editor */}
@@ -307,9 +309,9 @@ function App() {
         />
 
         {/* Zoom Display */}
-        <div className="absolute bottom-4 right-4 bg-white rounded-md shadow-md px-2 py-1 text-sm">
-          {Math.round(scale * 100)}%
-        </div>
+        <ZoomPanel 
+          scale={scale}
+        />
       </div>
     </CanvasProvider>
   );
