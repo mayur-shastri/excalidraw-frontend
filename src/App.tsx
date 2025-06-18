@@ -13,7 +13,7 @@ import { useState, useCallback, useEffect } from 'react';
 import Toolbar from './components/Toolbar';
 import PropertyPanel from './components/PropertyPanel';
 import TextEditor from './components/TextEditor';
-import { DrawElement, ElementType, Point, ElementStyle } from './types';
+import { DrawElement, ElementType, Point, ElementStyle, ArrowPoint } from './types';
 import { useElementOperations } from './hooks/useElementOperations';
 import { CanvasProvider } from './contexts/CanvasContext/CanvasProvider';
 import Canvas from './components/Canvas/Canvas';
@@ -39,7 +39,8 @@ function App() {
 
   // State for hovered elements
   const [hoveredElement, setHoveredElement] = useState<DrawElement | null>(null);
-  const [contactPoint, setContactPoint] = useState<Point | null>(null);
+  const [arrowStartPoint, setArrowStartPoint] = useState<ArrowPoint | null>(null);
+  const [arrowEndPoint, setArrowEndPoint] = useState<ArrowPoint | null>(null);
 
 
   // State for zoom and pan
@@ -279,8 +280,10 @@ function App() {
         onTextEdit: handleTextEdit,
         hoveredElement,
         setHoveredElement,
-        contactPoint,
-        setContactPoint
+        arrowStartPoint,
+        setArrowStartPoint,
+        arrowEndPoint,
+        setArrowEndPoint
       }}
     >
       <div className="w-screen h-screen overflow-hidden bg-gray-50 relative">
@@ -318,9 +321,7 @@ function App() {
         />
 
         {/* Zoom Display */}
-        <ZoomPanel 
-          scale={scale}
-        />
+        <ZoomPanel/>
       </div>
     </CanvasProvider>
   );

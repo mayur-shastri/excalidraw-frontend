@@ -2,7 +2,8 @@ import { useCanvasContext } from '../contexts/CanvasContext/CanvasContext';
 import { getRotatedCorners } from '../utils/geometry';
 import { DrawElement } from '../types';
 import { defaultStyle } from '../constants';
-import { renderElement } from '../utils/renderElements';
+import { useRender } from './useRender';
+// import { renderElement } from '../utils/renderElements';
 
 export function useDrawOnCanvas(canvasRef: React.RefObject<HTMLCanvasElement>, isDrawing: boolean) {
   const {
@@ -12,9 +13,12 @@ export function useDrawOnCanvas(canvasRef: React.RefObject<HTMLCanvasElement>, i
     scale,
     selectionBox,
     hoveredElement,
-    contactPoint,
-    tool
+    arrowStartPoint,
+    arrowEndPoint,
+    tool,
   } = useCanvasContext();
+
+  const {renderElement} = useRender();
 
   const drawGrid = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     const gridSize = 20;
@@ -137,14 +141,28 @@ export function useDrawOnCanvas(canvasRef: React.RefObject<HTMLCanvasElement>, i
 
       ctx.restore();
 
-      // Draw the contact point
-      if (contactPoint) {
+      // Draw the contact points
+      if (arrowStartPoint?.point) {
         ctx.save();
         ctx.fillStyle = '#3b82f6';
         ctx.beginPath();
         ctx.arc(
-          contactPoint.x,
-          contactPoint.y,
+          arrowStartPoint.point.x,
+          arrowStartPoint.point.y,
+          5 / scale, // Radius of the point, scaled appropriately
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+        ctx.restore();
+      }
+      if (arrowEndPoint?.point) {
+        ctx.save();
+        ctx.fillStyle = '#3b82f6';
+        ctx.beginPath();
+        ctx.arc(
+          arrowEndPoint.point.x,
+          arrowEndPoint.point.y,
           5 / scale, // Radius of the point, scaled appropriately
           0,
           Math.PI * 2

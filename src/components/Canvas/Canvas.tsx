@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { ArrowElement, DrawElement, ElementType, LineElement, Point, ResizeDirection, TextElement } from '../../types';
-import { renderElement } from '../../utils/renderElements';
+// import { renderElement } from '../../utils/renderElements';
+
 import { calculateClosestBoundaryPoint, generateId } from '../../utils/helpers';
 import { useDrawOnCanvas } from '../../hooks/useDrawOnCanvas';
 import { useCursorUtils } from '../../hooks/useCursorUtils';
@@ -9,6 +10,7 @@ import { TranslatingStartState } from '../../types';
 import { useTranslateElements } from '../../hooks/useTranslateElements';
 import { useCanvasContext } from '../../contexts/CanvasContext/CanvasContext';
 import { defaultStyle } from '../../constants';
+import { useRender } from '../../hooks/useRender';
 
 const Canvas: React.FC = () => {
 
@@ -26,8 +28,10 @@ const Canvas: React.FC = () => {
     onElementComplete,
     hoveredElement,
     setHoveredElement,
-    contactPoint,
-    setContactPoint
+    arrowStartPoint,
+    setArrowStartPoint,
+    arrowEndPoint,
+    setArrowEndPoint
   } = useCanvasContext();
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -43,6 +47,8 @@ const Canvas: React.FC = () => {
   const { updateCursor, checkResizeHandle, checkRotateHandle, findElementAtPosition } = useCursorUtils(canvasRef);
   const { resizeElements, rotateElements, setOriginalElements, setRotationStartPoint } = useRotateAndResizeElements();
   const { translateElements, setTranslationStartPositions } = useTranslateElements();
+
+  const {renderElement} = useRender();
 
   const handleDoubleClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const point = getCoordinates(event);
@@ -221,10 +227,10 @@ const Canvas: React.FC = () => {
   const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const point = getCoordinates(event);
     setStartPoint(point);
-
     if (tool !== 'arrow') {
       setHoveredElement(null);
-      setContactPoint(null);
+      setArrowStartPoint(null);
+      setArrowEndPoint(null);
     }
 
     if (tool === 'eraser') {
@@ -305,6 +311,7 @@ const Canvas: React.FC = () => {
       const newElement = createElement(tool, point);
       if (newElement) setCurrentElement(newElement);
     }
+
   };
 
   const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
@@ -312,20 +319,45 @@ const Canvas: React.FC = () => {
     const deltaX = currentPoint.x - startPoint.x;
     const deltaY = currentPoint.y - startPoint.y;
 
-    if (tool === 'arrow' && !isDrawing) {
+    if (tool === 'arrow') {
       const elementUnderCursor = findElementAtPosition(currentPoint);
-      if (elementUnderCursor) {
-        setHoveredElement(elementUnderCursor);
-        // Calculate the closest point on the element's boundary to the cursor
-        const closestPoint = calculateClosestBoundaryPoint(elementUnderCursor, currentPoint);
-        setContactPoint(closestPoint);
-      } else {
-        setHoveredElement(null);
-        setContactPoint(null);
+      if (!isDrawing) {
+        if (elementUnderCursor) {
+          setHoveredElement(elementUnderCursor);
+          // Calculate the closest point on the element's boundary to the cursor
+          const closestPoint = calculateClosestBoundaryPoint(elementUnderCursor, currentPoint);
+          setArrowStartPoint(prev => {
+            return {
+              point: closestPoint,
+              elementId: hoveredElement?.id
+            };
+          });
+        } else {
+          setHoveredElement(null);
+          setArrowStartPoint(null);
+        }
+      }
+      else {
+        const elementUnderCursor = findElementAtPosition(currentPoint);
+        if (elementUnderCursor) {
+          setHoveredElement(elementUnderCursor);
+          // Calculate the closest point on the element's boundary to the cursor
+          const closestPoint = calculateClosestBoundaryPoint(elementUnderCursor, currentPoint);
+          setArrowEndPoint(prev => {
+            return {
+              point: closestPoint,
+              elementId: hoveredElement?.id
+            };
+          });
+        } else {
+          setHoveredElement(null);
+          setArrowEndPoint(null);
+        }
       }
     } else {
       setHoveredElement(null);
-      setContactPoint(null);
+      setArrowStartPoint(null);
+      setArrowEndPoint(null);
     }
 
     if (isRotating) {
@@ -460,6 +492,54 @@ const Canvas: React.FC = () => {
   };
 
   const handleMouseUp = () => {
+
+    if (isDrawing && tool === 'arrow' && currentElement?.type === 'arrow') { //insert arrow to elements
+      const finalElement: ArrowElement = { ...currentElement };
+
+      // Calculate start binding if exists
+      if (arrowStartPoint?.elementId) {
+        const startElement = elements.find(el => el.id === arrowStartPoint.elementId);
+        if (startElement) {
+          const center = {
+            x: startElement.x + startElement.width / 2,
+            y: startElement.y + startElement.height / 2,
+          };
+          const dx = arrowStartPoint.point.x - center.x;
+          const dy = arrowStartPoint.point.y - center.y;
+          finalElement.startBinding = {
+            elementId: startElement.id,
+            angle: Math.atan2(dy, dx),
+          };
+        }
+      }
+
+      // Calculate end binding if exists
+      if (arrowEndPoint?.elementId) {
+        const endElement = elements.find(el => el.id === arrowEndPoint.elementId);
+        if (endElement) {
+          const center = {
+            x: endElement.x + endElement.width / 2,
+            y: endElement.y + endElement.height / 2,
+          };
+          const dx = arrowEndPoint.point.x - center.x;
+          const dy = arrowEndPoint.point.y - center.y;
+          finalElement.endBinding = {
+            elementId: endElement.id,
+            angle: Math.atan2(dy, dx),
+          };
+        }
+      }
+
+
+      // Add the fully configured arrow to elements in one operation
+      setElements(prev => [...prev, finalElement]);
+      setCurrentElement(null);
+    } else if (isDrawing && currentElement && tool !== 'selection') { //insert other types of new elements to elements array
+      setElements(prev => [...prev, currentElement]);
+    }
+
+    setHoveredElement(null);
+
     if (tool === 'eraser' && isDrawing) {
       // Remove elements marked for deletion (including freedraw)
       setElements(prevElements => prevElements.filter(el => !el.isMarkedForDeletion));
@@ -482,8 +562,6 @@ const Canvas: React.FC = () => {
         const selectedElements = findElementsInSelectionBox();
         setSelectedElementIds(prev => [...new Set([...prev, ...selectedElements])]);
         setSelectionBox(null);
-      } else if (currentElement && tool !== 'selection') {
-        setElements(prev => [...prev, currentElement]);
       }
     }
 
@@ -510,7 +588,10 @@ const Canvas: React.FC = () => {
 
   useEffect(() => {
     redrawCanvas();
-  }, [elements, scale, panOffset, selectionBox, hoveredElement, contactPoint, tool]);
+    if (arrowStartPoint && arrowEndPoint) {
+      drawCurrentElement(currentElement);
+    }
+  }, [elements, scale, panOffset, selectionBox, hoveredElement, arrowStartPoint, arrowEndPoint, tool]);
 
   useEffect(() => {
     setElements(prev =>
@@ -520,6 +601,10 @@ const Canvas: React.FC = () => {
       }))
     );
   }, [selectedElementIds]);
+
+  useEffect(()=>{
+    console.log(elements[elements.length - 1]);
+  }, [elements]);
 
   return (
     <canvas

@@ -108,8 +108,10 @@ export interface CanvasProps {
   onTextEdit: (element: TextElement) => void;
   hoveredElement : DrawElement | null;
   setHoveredElement : (element : DrawElement | null)=>void;
-  contactPoint : Point | null;
-  setContactPoint : (point : Point | null)=>void;
+  arrowStartPoint : ArrowPoint | null;
+  setArrowStartPoint : (point : ArrowPoint | null)=>void;
+  arrowEndPoint : ArrowPoint | null;
+  setArrowEndPoint : (point : ArrowPoint | null)=>void;
   selectionBox: {
     startX: number;
     startY: number;
@@ -132,4 +134,9 @@ export interface TranslatingStartState extends Point {
   startPoint?: Point;
   endPoint?: Point;
   points?: Point[];
+}
+
+export interface ArrowPoint{
+  elementId? : string;
+  point : Point;
 }
