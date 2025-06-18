@@ -2,7 +2,7 @@
 Todo:
 2. Make it more like eraser.io
   2.1 : Connectors instead of plain arrows
-  2.2 : No grid
+  2.2 : No grid -->Done
   2.3 : 
 3. MCP server
 4. Collaboraion Feature

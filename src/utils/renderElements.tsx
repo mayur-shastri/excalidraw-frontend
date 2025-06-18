@@ -266,26 +266,46 @@ const renderCenteredText = (ctx: CanvasRenderingContext2D, element: any) => {
   ctx.fillText(text, centerX, centerY);
 };
 
-const drawSelectionOutline = (ctx: CanvasRenderingContext2D, element: DrawElement, multiSelectionFlag : boolean) => {
+const drawSelectionOutline = (ctx: CanvasRenderingContext2D, element: DrawElement, multiSelectionFlag: boolean) => {
   const { x, y, width, height } = element;
-  ctx.strokeStyle = '#4285f4';
-  ctx.lineWidth = 1;
-  ctx.setLineDash([5, 5]);
-  ctx.strokeRect(x - 4, y - 4, width + 8, height + 8);
-  ctx.setLineDash([]);
+  const outlinePadding = 10;
+  const outlineRadius = 12;
 
+  // Draw continuous rounded rectangle outline outside the element
+  ctx.save();
+  ctx.strokeStyle = '#4285f4';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([]); // continuous
+
+  ctx.beginPath();
+  ctx.moveTo(x - outlinePadding + outlineRadius, y - outlinePadding);
+  ctx.lineTo(x + width + outlinePadding - outlineRadius, y - outlinePadding);
+  ctx.quadraticCurveTo(x + width + outlinePadding, y - outlinePadding, x + width + outlinePadding, y - outlinePadding + outlineRadius);
+  ctx.lineTo(x + width + outlinePadding, y + height + outlinePadding - outlineRadius);
+  ctx.quadraticCurveTo(x + width + outlinePadding, y + height + outlinePadding, x + width + outlinePadding - outlineRadius, y + height + outlinePadding);
+  ctx.lineTo(x - outlinePadding + outlineRadius, y + height + outlinePadding);
+  ctx.quadraticCurveTo(x - outlinePadding, y + height + outlinePadding, x - outlinePadding, y + height + outlinePadding - outlineRadius);
+  ctx.lineTo(x - outlinePadding, y - outlinePadding + outlineRadius);
+  ctx.quadraticCurveTo(x - outlinePadding, y - outlinePadding, x - outlinePadding + outlineRadius, y - outlinePadding);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.restore();
+
+  // Draw resize handles (still at corners/edges, but outside the element)
   const handleSize = 8;
+  const handleOffset = outlinePadding;
   const handles: { position: ResizeHandle; x: number; y: number }[] = [
-    { position: 'top-left', x: x - handleSize / 2, y: y - handleSize / 2 },
-    { position: 'top', x: x + width / 2 - handleSize / 2, y: y - handleSize / 2 },
-    { position: 'top-right', x: x + width - handleSize / 2, y: y - handleSize / 2 },
-    { position: 'left', x: x - handleSize / 2, y: y + height / 2 - handleSize / 2 },
-    { position: 'right', x: x + width - handleSize / 2, y: y + height / 2 - handleSize / 2 },
-    { position: 'bottom-left', x: x - handleSize / 2, y: y + height - handleSize / 2 },
-    { position: 'bottom', x: x + width / 2 - handleSize / 2, y: y + height - handleSize / 2 },
-    { position: 'bottom-right', x: x + width - handleSize / 2, y: y + height - handleSize / 2 },
+    { position: 'top-left', x: x - handleOffset - handleSize / 2, y: y - handleOffset - handleSize / 2 },
+    { position: 'top', x: x + width / 2 - handleSize / 2, y: y - handleOffset - handleSize / 2 },
+    { position: 'top-right', x: x + width + handleOffset - handleSize / 2, y: y - handleOffset - handleSize / 2 },
+    { position: 'left', x: x - handleOffset - handleSize / 2, y: y + height / 2 - handleSize / 2 },
+    { position: 'right', x: x + width + handleOffset - handleSize / 2, y: y + height / 2 - handleSize / 2 },
+    { position: 'bottom-left', x: x - handleOffset - handleSize / 2, y: y + height + handleOffset - handleSize / 2 },
+    { position: 'bottom', x: x + width / 2 - handleSize / 2, y: y + height + handleOffset - handleSize / 2 },
+    { position: 'bottom-right', x: x + width + handleOffset - handleSize / 2, y: y + height + handleOffset - handleSize / 2 },
   ];
 
+  ctx.save();
   ctx.fillStyle = 'white';
   ctx.strokeStyle = '#4285f4';
   ctx.lineWidth = 1;
@@ -296,19 +316,22 @@ const drawSelectionOutline = (ctx: CanvasRenderingContext2D, element: DrawElemen
     ctx.fill();
     ctx.stroke();
   });
+  ctx.restore();
 
-  // Draw rotation handle
+  // Draw rotation handle as a small circle above the top center
   if (!multiSelectionFlag) {
-    const rotationHandleY = y - 30;
-    ctx.beginPath();
-    ctx.moveTo(x + width / 2, y - 10);
-    ctx.lineTo(x + width / 2, rotationHandleY);
-    ctx.stroke();
+    const rotationHandleY = y - outlinePadding - 24;
+    const rotationHandleX = x + width / 2;
+    const rotationHandleRadius = 7;
 
+    ctx.save();
+    ctx.fillStyle = '#fff';
+    ctx.strokeStyle = '#4285f4';
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(x + width / 2, rotationHandleY, 5, 0, 2 * Math.PI);
+    ctx.arc(rotationHandleX, rotationHandleY, rotationHandleRadius, 0, 2 * Math.PI);
     ctx.fill();
     ctx.stroke();
+    ctx.restore();
   }
-
 };

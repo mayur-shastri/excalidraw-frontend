@@ -84,7 +84,7 @@ export function useDrawOnCanvas(canvasRef: React.RefObject<HTMLCanvasElement>, i
     ctx.translate(panOffset.x, panOffset.y);
     ctx.scale(scale, scale);
 
-    drawGrid(ctx, canvas.width, canvas.height);
+    // drawGrid(ctx, canvas.width, canvas.height);
 
     elements.forEach(element => {
       if (element.isMarkedForDeletion) return;
@@ -92,16 +92,25 @@ export function useDrawOnCanvas(canvasRef: React.RefObject<HTMLCanvasElement>, i
     });
 
     if (selectionBox?.isActive) {
+      ctx.save();
       ctx.strokeStyle = '#4285f4';
       ctx.lineWidth = 1;
-      ctx.setLineDash([5, 5]);
-      ctx.strokeRect(
-        selectionBox.startX,
-        selectionBox.startY,
-        selectionBox.width,
-        selectionBox.height
+      ctx.globalAlpha = 0.15; // Low opacity for fill
+      ctx.fillStyle = '#4285f4';
+      ctx.fillRect(
+      selectionBox.startX,
+      selectionBox.startY,
+      selectionBox.width,
+      selectionBox.height
       );
-      ctx.setLineDash([]);
+      ctx.globalAlpha = 1.0; // Reset opacity for stroke
+      ctx.strokeRect(
+      selectionBox.startX,
+      selectionBox.startY,
+      selectionBox.width,
+      selectionBox.height
+      );
+      ctx.restore();
     }
 
     if (selectedElementIds.length > 0 && !isDrawing) {
