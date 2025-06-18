@@ -11,6 +11,9 @@ export function useDrawOnCanvas(canvasRef: React.RefObject<HTMLCanvasElement>, i
     panOffset,
     scale,
     selectionBox,
+    hoveredElement,
+    contactPoint,
+    tool
   } = useCanvasContext();
 
   const drawGrid = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
@@ -98,23 +101,57 @@ export function useDrawOnCanvas(canvasRef: React.RefObject<HTMLCanvasElement>, i
       ctx.globalAlpha = 0.15; // Low opacity for fill
       ctx.fillStyle = '#4285f4';
       ctx.fillRect(
-      selectionBox.startX,
-      selectionBox.startY,
-      selectionBox.width,
-      selectionBox.height
+        selectionBox.startX,
+        selectionBox.startY,
+        selectionBox.width,
+        selectionBox.height
       );
       ctx.globalAlpha = 1.0; // Reset opacity for stroke
       ctx.strokeRect(
-      selectionBox.startX,
-      selectionBox.startY,
-      selectionBox.width,
-      selectionBox.height
+        selectionBox.startX,
+        selectionBox.startY,
+        selectionBox.width,
+        selectionBox.height
       );
       ctx.restore();
     }
 
     if (selectedElementIds.length > 0 && !isDrawing) {
       drawResizeHandles(ctx);
+    }
+
+    if (hoveredElement && tool === 'arrow') {
+      ctx.save();
+      ctx.strokeStyle = '#3b82f6'; // Blue color for highlight
+      ctx.lineWidth = 2 / scale; // Scale the line width appropriately
+
+      // Draw the silhouette/highlight
+      renderElement(ctx, {
+        ...hoveredElement,
+        style: {
+          ...hoveredElement.style,
+          strokeColor: '#3b82f6',
+          fillStyle : 'solid'
+        }
+      }, false);
+
+      ctx.restore();
+
+      // Draw the contact point
+      if (contactPoint) {
+        ctx.save();
+        ctx.fillStyle = '#3b82f6';
+        ctx.beginPath();
+        ctx.arc(
+          contactPoint.x,
+          contactPoint.y,
+          5 / scale, // Radius of the point, scaled appropriately
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+        ctx.restore();
+      }
     }
 
     ctx.restore();

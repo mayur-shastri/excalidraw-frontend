@@ -1,6 +1,9 @@
 import { ArrowElement, DrawElement, FreedrawElement, LineElement, ResizeHandle, TextElement } from "../types";
 
-export const renderElement = (ctx: CanvasRenderingContext2D, element: DrawElement, multiSelectionFlag: boolean) => {
+export const renderElement = (
+  ctx: CanvasRenderingContext2D, 
+  element: DrawElement, 
+  multiSelectionFlag: boolean ) => {
   const { style, isSelected } = element;
 
   ctx.strokeStyle = style.strokeColor;
@@ -266,9 +269,12 @@ const renderCenteredText = (ctx: CanvasRenderingContext2D, element: any) => {
   ctx.fillText(text, centerX, centerY);
 };
 
-const drawSelectionOutline = (ctx: CanvasRenderingContext2D, element: DrawElement, multiSelectionFlag: boolean) => {
+const drawSelectionOutline = (
+  ctx: CanvasRenderingContext2D, 
+  element: DrawElement, 
+  multiSelectionFlag: boolean,) => {
   const { x, y, width, height } = element;
-  const outlinePadding = 10;
+  const outlinePadding = 7;
   const outlineRadius = 12;
 
   // Draw continuous rounded rectangle outline outside the element
@@ -308,7 +314,7 @@ const drawSelectionOutline = (ctx: CanvasRenderingContext2D, element: DrawElemen
   ctx.save();
   ctx.fillStyle = 'white';
   ctx.strokeStyle = '#4285f4';
-  ctx.lineWidth = 1;
+  ctx.lineWidth = 0.5;
 
   handles.forEach(handle => {
     ctx.beginPath();
@@ -320,14 +326,14 @@ const drawSelectionOutline = (ctx: CanvasRenderingContext2D, element: DrawElemen
 
   // Draw rotation handle as a small circle above the top center
   if (!multiSelectionFlag) {
-    const rotationHandleY = y - outlinePadding - 24;
+    const rotationHandleY = y - outlinePadding - 20;
     const rotationHandleX = x + width / 2;
-    const rotationHandleRadius = 7;
+    const rotationHandleRadius = 5;
 
     ctx.save();
     ctx.fillStyle = '#fff';
     ctx.strokeStyle = '#4285f4';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.arc(rotationHandleX, rotationHandleY, rotationHandleRadius, 0, 2 * Math.PI);
     ctx.fill();

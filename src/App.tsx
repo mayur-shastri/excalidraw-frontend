@@ -37,6 +37,11 @@ function App() {
   // State for selected elements
   const [selectedElementIds, setSelectedElementIds] = useState<string[]>([]);
 
+  // State for hovered elements
+  const [hoveredElement, setHoveredElement] = useState<DrawElement | null>(null);
+  const [contactPoint, setContactPoint] = useState<Point | null>(null);
+
+
   // State for zoom and pan
   const [scale, setScale] = useState<number>(1);
   const [panOffset, setPanOffset] = useState<Point>({ x: 0, y: 0 });
@@ -272,6 +277,10 @@ function App() {
         setSelectionBox,
         onElementComplete: handleElementComplete,
         onTextEdit: handleTextEdit,
+        hoveredElement,
+        setHoveredElement,
+        contactPoint,
+        setContactPoint
       }}
     >
       <div className="w-screen h-screen overflow-hidden bg-gray-50 relative">

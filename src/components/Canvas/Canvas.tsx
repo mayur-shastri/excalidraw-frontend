@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { ArrowElement, DrawElement, ElementType, LineElement, Point, ResizeDirection, TextElement } from '../../types';
 import { renderElement } from '../../utils/renderElements';
-import { generateId } from '../../utils/helpers';
+import { calculateClosestBoundaryPoint, generateId } from '../../utils/helpers';
 import { useDrawOnCanvas } from '../../hooks/useDrawOnCanvas';
 import { useCursorUtils } from '../../hooks/useCursorUtils';
 import { useRotateAndResizeElements } from '../../hooks/useRotateAndResizeElements';
@@ -24,6 +24,10 @@ const Canvas: React.FC = () => {
     selectionBox,
     setSelectionBox,
     onElementComplete,
+    hoveredElement,
+    setHoveredElement,
+    contactPoint,
+    setContactPoint
   } = useCanvasContext();
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -34,11 +38,11 @@ const Canvas: React.FC = () => {
   const [currentElement, setCurrentElement] = useState<DrawElement | null>(null);
   const [resizeDirection, setResizeDirection] = useState<ResizeDirection>(null);
   const [isRotating, setIsRotating] = useState(false);
-  
+
   const { redrawCanvas } = useDrawOnCanvas(canvasRef, isDrawing);
   const { updateCursor, checkResizeHandle, checkRotateHandle, findElementAtPosition } = useCursorUtils(canvasRef);
-  const {resizeElements, rotateElements, setOriginalElements, setRotationStartPoint} = useRotateAndResizeElements();
-  const {translateElements, setTranslationStartPositions} = useTranslateElements();
+  const { resizeElements, rotateElements, setOriginalElements, setRotationStartPoint } = useRotateAndResizeElements();
+  const { translateElements, setTranslationStartPositions } = useTranslateElements();
 
   const handleDoubleClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const point = getCoordinates(event);
@@ -218,6 +222,11 @@ const Canvas: React.FC = () => {
     const point = getCoordinates(event);
     setStartPoint(point);
 
+    if (tool !== 'arrow') {
+      setHoveredElement(null);
+      setContactPoint(null);
+    }
+
     if (tool === 'eraser') {
       setIsDrawing(true);
       return;
@@ -302,6 +311,22 @@ const Canvas: React.FC = () => {
     const currentPoint = getCoordinates(event);
     const deltaX = currentPoint.x - startPoint.x;
     const deltaY = currentPoint.y - startPoint.y;
+
+    if (tool === 'arrow' && !isDrawing) {
+      const elementUnderCursor = findElementAtPosition(currentPoint);
+      if (elementUnderCursor) {
+        setHoveredElement(elementUnderCursor);
+        // Calculate the closest point on the element's boundary to the cursor
+        const closestPoint = calculateClosestBoundaryPoint(elementUnderCursor, currentPoint);
+        setContactPoint(closestPoint);
+      } else {
+        setHoveredElement(null);
+        setContactPoint(null);
+      }
+    } else {
+      setHoveredElement(null);
+      setContactPoint(null);
+    }
 
     if (isRotating) {
       rotateElements(currentPoint);
@@ -485,7 +510,7 @@ const Canvas: React.FC = () => {
 
   useEffect(() => {
     redrawCanvas();
-  }, [elements, scale, panOffset, selectionBox]);
+  }, [elements, scale, panOffset, selectionBox, hoveredElement, contactPoint, tool]);
 
   useEffect(() => {
     setElements(prev =>

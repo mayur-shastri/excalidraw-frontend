@@ -49,6 +49,8 @@ export type ArrowElement = ElementBase & {
   type: 'arrow';
   startPoint: Point;
   endPoint: Point;
+  startBinding?: { elementId: string; angle: number };
+  endBinding?: { elementId: string; angle: number };
 };
 
 export type LineElement = ElementBase & {
@@ -104,6 +106,10 @@ export interface CanvasProps {
   panOffset: Point;
   onElementComplete: () => void;
   onTextEdit: (element: TextElement) => void;
+  hoveredElement : DrawElement | null;
+  setHoveredElement : (element : DrawElement | null)=>void;
+  contactPoint : Point | null;
+  setContactPoint : (point : Point | null)=>void;
   selectionBox: {
     startX: number;
     startY: number;
