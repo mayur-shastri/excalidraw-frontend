@@ -15,7 +15,7 @@ export type ElementStyle = {
   fontFamily?: string;
   textAlign?: 'left' | 'center' | 'right';
   text?: string;
-  cornerRadius? : number;
+  cornerRadius?: number;
 };
 
 export type ElementBase = {
@@ -50,7 +50,10 @@ export type ArrowElement = ElementBase & {
   type: 'arrow';
   startPoint: Point;
   endPoint: Point;
-  connectionId : string;
+  connectionId: string;
+  startSide: 'top' | 'bottom' | 'left' | 'right';
+  endSide: 'top' | 'bottom' | 'left' | 'right';
+  direction : 'up' | 'right' | 'down' | 'left';
 };
 
 export type LineElement = ElementBase & {
@@ -102,18 +105,18 @@ export interface CanvasProps {
   selectedElementIds: string[];
   setSelectedElementIds: React.Dispatch<React.SetStateAction<string[]>>;
   scale: number;
-  setScale : (prev : number)=>void;
+  setScale: (prev: number) => void;
   panOffset: Point;
   onElementComplete: () => void;
   onTextEdit: (element: TextElement) => void;
-  hoveredElement : DrawElement | null;
-  setHoveredElement : (element : DrawElement | null)=>void;
-  arrowStartPoint : ArrowPoint | null;
-  setArrowStartPoint : (point : ArrowPoint | null)=>void;
-  arrowEndPoint : ArrowPoint | null;
-  setArrowEndPoint : (point : ArrowPoint | null)=>void;
-  connections : Connection[];
-  setConnections : (conn : Connection[])=>void;
+  hoveredElement: DrawElement | null;
+  setHoveredElement: (element: DrawElement | null) => void;
+  arrowStartPoint: ArrowPoint | null;
+  setArrowStartPoint: (point: ArrowPoint | null) => void;
+  arrowEndPoint: ArrowPoint | null;
+  setArrowEndPoint: (point: ArrowPoint | null) => void;
+  connections: Connection[];
+  setConnections: (conn: Connection[]) => void;
   selectionBox: {
     startX: number;
     startY: number;
@@ -138,9 +141,9 @@ export interface TranslatingStartState extends Point {
   points?: Point[];
 }
 
-export interface ArrowPoint{
-  elementId? : string;
-  point : Point;
+export interface ArrowPoint {
+  elementId?: string;
+  point: Point;
 }
 
 export type Connection = {

@@ -1,5 +1,5 @@
 import { useCanvasContext } from "../contexts/CanvasContext/CanvasContext";
-import { ArrowElement, DrawElement, FreedrawElement, LineElement, ResizeHandle, TextElement } from "../types";
+import { ArrowElement, DrawElement, FreedrawElement, LineElement, Point, ResizeHandle, TextElement } from "../types";
 
 export const useRender = () => {
 
@@ -205,37 +205,191 @@ export const useRender = () => {
         ctx.stroke();
     };
 
+    // const renderArrow = (ctx: CanvasRenderingContext2D, element: ArrowElement) => {
+    //     const { startPoint, endPoint, direction, style } = element;
+    //     const strokeWidth = style.strokeWidth || 1;
+    //     const pathRadius = 16;
+    //     const headLength = 10 + strokeWidth;
+    //     const color = style.strokeColor || "#ffffff";
+
+    //     ctx.save();
+    //     ctx.strokeStyle = color;
+    //     ctx.lineWidth = strokeWidth;
+    //     ctx.lineJoin = "round";
+    //     ctx.lineCap = "round";
+
+    //     // Draw path with rounded bends (basic 2-bend manhattan routing)
+    //     const midX = (startPoint.x + endPoint.x) / 2;
+    //     const midY = (startPoint.y + endPoint.y) / 2;
+
+    //     ctx.beginPath();
+    //     ctx.moveTo(startPoint.x, startPoint.y);
+
+    //     if (Math.abs(startPoint.x - endPoint.x) > Math.abs(startPoint.y - endPoint.y)) {
+    //         // Horizontal preference
+    //         ctx.lineTo(midX, startPoint.y);
+    //         ctx.lineTo(midX, endPoint.y);
+    //     } else {
+    //         // Vertical preference
+    //         ctx.lineTo(startPoint.x, midY);
+    //         ctx.lineTo(endPoint.x, midY);
+    //     }
+
+    //     ctx.lineTo(endPoint.x, endPoint.y);
+    //     ctx.stroke();
+
+    //     // Draw arrowhead at endPoint based on direction
+    //     const drawArrowhead = (x: number, y: number, dir: 'up' | 'down' | 'left' | 'right') => {
+    //         ctx.beginPath();
+    //         switch (dir) {
+    //             case 'up':
+    //                 ctx.moveTo(x, y);
+    //                 ctx.lineTo(x - headLength, y + headLength);
+    //                 ctx.lineTo(x + headLength, y + headLength);
+    //                 break;
+    //             case 'down':
+    //                 ctx.moveTo(x, y);
+    //                 ctx.lineTo(x - headLength, y - headLength);
+    //                 ctx.lineTo(x + headLength, y - headLength);
+    //                 break;
+    //             case 'left':
+    //                 ctx.moveTo(x, y);
+    //                 ctx.lineTo(x + headLength, y - headLength);
+    //                 ctx.lineTo(x + headLength, y + headLength);
+    //                 break;
+    //             case 'right':
+    //                 ctx.moveTo(x, y);
+    //                 ctx.lineTo(x - headLength, y - headLength);
+    //                 ctx.lineTo(x - headLength, y + headLength);
+    //                 break;
+    //         }
+    //         ctx.closePath();
+    //         ctx.fillStyle = color;
+    //         ctx.fill();
+    //     };
+
+    //     drawArrowhead(endPoint.x, endPoint.y, direction);
+
+    //     // Optional: text
+    //     if (element.text?.trim()) {
+    //         renderCenteredText(ctx, element);
+    //     }
+
+    //     ctx.restore();
+    // };
+
     const renderArrow = (ctx: CanvasRenderingContext2D, element: ArrowElement) => {
         const { startPoint, endPoint, style } = element;
+        const strokeWidth = style.strokeWidth || 2;
+        const color = style.strokeColor || "#000000";
+        const arrowSize = Math.max(8, strokeWidth * 2);
+        const curveRadius = 10;
 
-        // Draw the arrow shaft
-        ctx.beginPath();
-        ctx.moveTo(startPoint.x, startPoint.y);
-        ctx.lineTo(endPoint.x, endPoint.y);
-        ctx.stroke();
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.lineWidth = strokeWidth;
+        ctx.lineJoin = "round";
+        ctx.lineCap = "round";
 
-        // Draw the arrow head
-        const headLength = 10 + style.strokeWidth;
-        const angle = Math.atan2(endPoint.y - startPoint.y, endPoint.x - startPoint.x);
+        // Calculate direction vector
+        const dx = endPoint.x - startPoint.x;
+        const dy = endPoint.y - startPoint.y;
+        const angle = Math.atan2(dy, dx);
+        const length = Math.sqrt(dx * dx + dy * dy);
 
-        ctx.beginPath();
-        ctx.moveTo(endPoint.x, endPoint.y);
-        ctx.lineTo(
-            endPoint.x - headLength * Math.cos(angle - Math.PI / 6),
-            endPoint.y - headLength * Math.sin(angle - Math.PI / 6)
-        );
-        ctx.moveTo(endPoint.x, endPoint.y);
-        ctx.lineTo(
-            endPoint.x - headLength * Math.cos(angle + Math.PI / 6),
-            endPoint.y - headLength * Math.sin(angle + Math.PI / 6)
-        );
-        ctx.stroke();
+        // Smart path routing with smooth curves
+        if (length > 0) {
+            const controlPoints = calculateSmartControlPoints(startPoint, endPoint);
 
-        // Draw centered text for arrow if present
-        if (element.text && element.text.trim() !== '') {
+            // Draw the curved path
+            ctx.beginPath();
+            ctx.moveTo(startPoint.x, startPoint.y);
+
+            if (controlPoints.length === 1) {
+                // Simple curve
+                ctx.quadraticCurveTo(
+                    controlPoints[0].x,
+                    controlPoints[0].y,
+                    endPoint.x,
+                    endPoint.y
+                );
+            } else if (controlPoints.length === 2) {
+                // Bezier curve
+                ctx.bezierCurveTo(
+                    controlPoints[0].x,
+                    controlPoints[0].y,
+                    controlPoints[1].x,
+                    controlPoints[1].y,
+                    endPoint.x,
+                    endPoint.y
+                );
+            } else {
+                // Straight line as fallback
+                ctx.lineTo(endPoint.x, endPoint.y);
+            }
+
+            ctx.stroke();
+
+            // Draw arrowhead
+            drawModernArrowhead(ctx, endPoint, angle, arrowSize);
+        }
+
+        // Optional: text rendering
+        if (element.text?.trim()) {
             renderCenteredText(ctx, element);
         }
+
+        ctx.restore();
     };
+
+    function calculateSmartControlPoints(start: Point, end: Point): Point[] {
+        const dx = end.x - start.x;
+        const dy = end.y - start.y;
+        const minDistanceForCurve = 50;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < minDistanceForCurve) {
+            return []; // Straight line for short distances
+        }
+
+        // Manhattan-style routing with smooth curves
+        if (Math.abs(dx) > Math.abs(dy)) {
+            // Horizontal dominant
+            const midX = start.x + dx * 0.5;
+            return [
+                { x: midX, y: start.y },
+                { x: midX, y: end.y }
+            ];
+        } else {
+            // Vertical dominant
+            const midY = start.y + dy * 0.5;
+            return [
+                { x: start.x, y: midY },
+                { x: end.x, y: midY }
+            ];
+        }
+    }
+
+    function drawModernArrowhead(
+        ctx: CanvasRenderingContext2D,
+        point: Point,
+        angle: number,
+        size: number
+    ) {
+        ctx.save();
+        ctx.translate(point.x, point.y);
+        ctx.rotate(angle);
+
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 2);
+        ctx.lineTo(-size, size / 2);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.restore();
+    }
 
     const renderLine = (ctx: CanvasRenderingContext2D, element: LineElement) => {
         const { startPoint, endPoint } = element;

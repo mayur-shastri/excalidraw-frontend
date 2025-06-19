@@ -490,6 +490,28 @@ const Canvas: React.FC = () => {
 
       case 'arrow':
       case 'line': {
+        if (element.type === 'arrow' && arrowStartPoint) {
+          const start = arrowStartPoint.point;
+          let direction: 'up' | 'down' | 'left' | 'right' = 'right';
+
+          if(currentPoint.x >= start.x){
+            if(currentPoint.y === start.y)
+                direction = 'right';
+            else if(currentPoint.y > start.y)
+                direction = 'down';
+            else
+              direction = 'up';
+          } else{
+            if(currentPoint.y === start.y)
+                direction = 'left';
+            else if(currentPoint.y > start.y)
+                direction = 'down';
+            else
+              direction = 'up';
+          }
+
+          (updated as ArrowElement).direction = direction;
+        }
         (updated as ArrowElement | LineElement).endPoint = currentPoint;
         const startX = (updated as ArrowElement | LineElement).startPoint.x;
         const startY = (updated as ArrowElement | LineElement).startPoint.y;
@@ -518,13 +540,22 @@ const Canvas: React.FC = () => {
         startElementId: undefined,
         endElementId: undefined,
         startAngle: undefined,
-        endAngle: undefined
+        endAngle: undefined,
       };
 
       // Handle start element if exists
       if (arrowStartPoint?.elementId) {
         const startElement = elements.find(el => el.id === arrowStartPoint.elementId);
         if (startElement) {
+          const dx = arrowStartPoint.point.x - (startElement.x + startElement.width / 2);
+          const dy = arrowStartPoint.point.y - (startElement.y + startElement.height / 2);
+          let startSide: 'top' | 'bottom' | 'left' | 'right' = 'top';
+          if (Math.abs(dx) > Math.abs(dy)) {
+            startSide = dx > 0 ? 'right' : 'left';
+          } else {
+            startSide = dy > 0 ? 'bottom' : 'top';
+          }
+          newArrow.startSide = startSide;
           newConnection.startElementId = startElement.id;
           newConnection.startAngle = Math.atan2(
             arrowStartPoint.point.y - (startElement.y + startElement.height / 2),
@@ -546,6 +577,15 @@ const Canvas: React.FC = () => {
       if (arrowEndPoint?.elementId) {
         const endElement = elements.find(el => el.id === arrowEndPoint.elementId);
         if (endElement) {
+          const dx = arrowEndPoint.point.x - (endElement.x + endElement.width / 2);
+          const dy = arrowEndPoint.point.y - (endElement.y + endElement.height / 2);
+          let endSide: 'top' | 'bottom' | 'left' | 'right' = 'top';
+          if (Math.abs(dx) > Math.abs(dy)) {
+            endSide = dx > 0 ? 'right' : 'left';
+          } else {
+            endSide = dy > 0 ? 'bottom' : 'top';
+          }
+          newArrow.endSide = endSide;
           newConnection.endElementId = endElement.id;
           newConnection.endAngle = Math.atan2(
             arrowEndPoint.point.y - (endElement.y + endElement.height / 2),
