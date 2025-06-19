@@ -11,6 +11,7 @@ import { useTranslateElements } from '../../hooks/useTranslateElements';
 import { useCanvasContext } from '../../contexts/CanvasContext/CanvasContext';
 import { defaultStyle } from '../../constants';
 import { useRender } from '../../hooks/useRender';
+import { Connection } from '../../types';
 
 const Canvas: React.FC = () => {
 
@@ -31,7 +32,9 @@ const Canvas: React.FC = () => {
     arrowStartPoint,
     setArrowStartPoint,
     arrowEndPoint,
-    setArrowEndPoint
+    setArrowEndPoint,
+    connections,
+    setConnections
   } = useCanvasContext();
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -48,7 +51,7 @@ const Canvas: React.FC = () => {
   const { resizeElements, rotateElements, setOriginalElements, setRotationStartPoint } = useRotateAndResizeElements();
   const { translateElements, setTranslationStartPositions } = useTranslateElements();
 
-  const {renderElement} = useRender();
+  const { renderElement } = useRender();
 
   const handleDoubleClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const point = getCoordinates(event);
@@ -86,7 +89,8 @@ const Canvas: React.FC = () => {
         angle: 0,
         style: { ...defaultStyle },
         isSelected: true,
-        text: ''
+        text: '',
+        connectionIds: [],
       };
       onTextEdit(textElement as TextElement);
       return textElement;
@@ -107,7 +111,8 @@ const Canvas: React.FC = () => {
           angle: 0,
           style: { ...defaultStyle },
           isSelected: false,
-          text: ''
+          text: '',
+          connectionIds: [],
         };
         break;
       case 'rectangle':
@@ -121,7 +126,8 @@ const Canvas: React.FC = () => {
           angle: 0,
           style: { ...defaultStyle },
           isSelected: false,
-          text: ''
+          text: '',
+          connectionIds: [],
         };
         break;
       case 'ellipse':
@@ -135,7 +141,8 @@ const Canvas: React.FC = () => {
           angle: 0,
           style: { ...defaultStyle },
           isSelected: false,
-          text: ''
+          text: '',
+          connectionIds: [],
         };
         break;
       case 'arrow':
@@ -151,7 +158,9 @@ const Canvas: React.FC = () => {
           angle: 0,
           style: { ...defaultStyle },
           isSelected: false,
-          text: ''
+          text: '',
+          connectionId: "",
+          connectionIds: [],
         };
         break;
       case 'line':
@@ -167,7 +176,8 @@ const Canvas: React.FC = () => {
           angle: 0,
           style: { ...defaultStyle },
           isSelected: false,
-          text: ''
+          text: '',
+          connectionIds: [],
         };
         break;
       case 'diamond':
@@ -181,7 +191,8 @@ const Canvas: React.FC = () => {
           angle: 0,
           style: { ...defaultStyle },
           isSelected: false,
-          text: ''
+          text: '',
+          connectionIds: [],
         };
         break;
       case 'rhombus':
@@ -195,7 +206,8 @@ const Canvas: React.FC = () => {
           angle: 0,
           style: { ...defaultStyle },
           isSelected: false,
-          text: ''
+          text: '',
+          connectionIds: [],
         };
         break;
       default:
@@ -477,7 +489,7 @@ const Canvas: React.FC = () => {
         break;
 
       case 'arrow':
-      case 'line':
+      case 'line': {
         (updated as ArrowElement | LineElement).endPoint = currentPoint;
         const startX = (updated as ArrowElement | LineElement).startPoint.x;
         const startY = (updated as ArrowElement | LineElement).startPoint.y;
@@ -486,6 +498,7 @@ const Canvas: React.FC = () => {
         updated.width = Math.abs(currentPoint.x - startX);
         updated.height = Math.abs(currentPoint.y - startY);
         break;
+      }
     }
 
     return updated;
@@ -493,46 +506,66 @@ const Canvas: React.FC = () => {
 
   const handleMouseUp = () => {
 
-    if (isDrawing && tool === 'arrow' && currentElement?.type === 'arrow') { //insert arrow to elements
-      const finalElement: ArrowElement = { ...currentElement };
+    if (isDrawing && tool === 'arrow' && currentElement?.type === 'arrow') {
+      const newArrow = { ...currentElement } as ArrowElement;
+      const connectionId = generateId();
+      newArrow.connectionId = connectionId;
 
-      // Calculate start binding if exists
+      // Initialize connection with required fields
+      const newConnection: Connection = {
+        id: connectionId,
+        arrowElementId: newArrow.id,
+        startElementId: undefined,
+        endElementId: undefined,
+        startAngle: undefined,
+        endAngle: undefined
+      };
+
+      // Handle start element if exists
       if (arrowStartPoint?.elementId) {
         const startElement = elements.find(el => el.id === arrowStartPoint.elementId);
         if (startElement) {
-          const center = {
-            x: startElement.x + startElement.width / 2,
-            y: startElement.y + startElement.height / 2,
-          };
-          const dx = arrowStartPoint.point.x - center.x;
-          const dy = arrowStartPoint.point.y - center.y;
-          finalElement.startBinding = {
-            elementId: startElement.id,
-            angle: Math.atan2(dy, dx),
-          };
+          newConnection.startElementId = startElement.id;
+          newConnection.startAngle = Math.atan2(
+            arrowStartPoint.point.y - (startElement.y + startElement.height / 2),
+            arrowStartPoint.point.x - (startElement.x + startElement.width / 2)
+          );
+
+          // Update start element's connectionIds
+          setElements(prev =>
+            prev.map(el =>
+              el.id === startElement.id
+                ? { ...el, connectionIds: [...el.connectionIds, connectionId] }
+                : el
+            )
+          );
         }
       }
 
-      // Calculate end binding if exists
+      // Handle end element if exists
       if (arrowEndPoint?.elementId) {
         const endElement = elements.find(el => el.id === arrowEndPoint.elementId);
         if (endElement) {
-          const center = {
-            x: endElement.x + endElement.width / 2,
-            y: endElement.y + endElement.height / 2,
-          };
-          const dx = arrowEndPoint.point.x - center.x;
-          const dy = arrowEndPoint.point.y - center.y;
-          finalElement.endBinding = {
-            elementId: endElement.id,
-            angle: Math.atan2(dy, dx),
-          };
+          newConnection.endElementId = endElement.id;
+          newConnection.endAngle = Math.atan2(
+            arrowEndPoint.point.y - (endElement.y + endElement.height / 2),
+            arrowEndPoint.point.x - (endElement.x + endElement.width / 2)
+          );
+
+          // Update end element's connectionIds
+          setElements(prev =>
+            prev.map(el =>
+              el.id === endElement.id
+                ? { ...el, connectionIds: [...el.connectionIds, connectionId] }
+                : el
+            )
+          );
         }
       }
 
-
-      // Add the fully configured arrow to elements in one operation
-      setElements(prev => [...prev, finalElement]);
+      // Always add both arrow and connection atomically
+      setElements(prev => [...prev, newArrow]);
+      setConnections(prev => [...prev, newConnection]);
       setCurrentElement(null);
     } else if (isDrawing && currentElement && tool !== 'selection') { //insert other types of new elements to elements array
       setElements(prev => [...prev, currentElement]);
@@ -602,7 +635,7 @@ const Canvas: React.FC = () => {
     );
   }, [selectedElementIds]);
 
-  useEffect(()=>{
+  useEffect(() => {
     console.log(elements[elements.length - 1]);
   }, [elements]);
 

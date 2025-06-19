@@ -3,7 +3,7 @@ import { ArrowElement, DrawElement, FreedrawElement, LineElement, ResizeHandle, 
 
 export const useRender = () => {
 
-    const {elements} = useCanvasContext();
+    const { elements, connections } = useCanvasContext();
 
     const renderElement = (
         ctx: CanvasRenderingContext2D,
@@ -206,67 +206,34 @@ export const useRender = () => {
     };
 
     const renderArrow = (ctx: CanvasRenderingContext2D, element: ArrowElement) => {
-        const { startPoint, endPoint, style, startBinding, endBinding } = element;
+        const { startPoint, endPoint, style } = element;
 
-        // Helper to get the binding point on a bound element
-        const getBindingPoint = (
-            binding: { elementId: string; angle: number } | undefined,
-            fallback: { x: number; y: number }
-        ) => {
-            if (!binding) return fallback;
-            const boundElement = elements.find(el => el.id === binding.elementId);
-            if (!boundElement) return fallback;
-
-            // Calculate the center of the bound element
-            const centerX = boundElement.x + (boundElement.width || 0) / 2;
-            const centerY = boundElement.y + (boundElement.height || 0) / 2;
-
-            // Calculate the radius from center to edge (approximate as ellipse)
-            const rx = (boundElement.width || 0) / 2;
-            const ry = (boundElement.height || 0) / 2;
-
-            // The angle is relative to the element's rotation
-            const totalAngle = (boundElement.angle || 0) + (binding.angle || 0);
-
-            // Find the edge point at the given angle
-            const x = centerX + rx * Math.cos(totalAngle);
-            const y = centerY + ry * Math.sin(totalAngle);
-
-            return { x, y };
-        };
-
-        // If both bindings exist, use them to calculate arrow endpoints
-        const actualStart = startBinding
-            ? getBindingPoint(startBinding, startPoint)
-            : startPoint;
-        const actualEnd = endBinding
-            ? getBindingPoint(endBinding, endPoint)
-            : endPoint;
-
+        // Draw the arrow shaft
         ctx.beginPath();
-        ctx.moveTo(actualStart.x, actualStart.y);
-        ctx.lineTo(actualEnd.x, actualEnd.y);
+        ctx.moveTo(startPoint.x, startPoint.y);
+        ctx.lineTo(endPoint.x, endPoint.y);
         ctx.stroke();
 
+        // Draw the arrow head
         const headLength = 10 + style.strokeWidth;
-        const angle = Math.atan2(actualEnd.y - actualStart.y, actualEnd.x - actualStart.x);
+        const angle = Math.atan2(endPoint.y - startPoint.y, endPoint.x - startPoint.x);
 
         ctx.beginPath();
-        ctx.moveTo(actualEnd.x, actualEnd.y);
+        ctx.moveTo(endPoint.x, endPoint.y);
         ctx.lineTo(
-            actualEnd.x - headLength * Math.cos(angle - Math.PI / 6),
-            actualEnd.y - headLength * Math.sin(angle - Math.PI / 6)
+            endPoint.x - headLength * Math.cos(angle - Math.PI / 6),
+            endPoint.y - headLength * Math.sin(angle - Math.PI / 6)
         );
-        ctx.moveTo(actualEnd.x, actualEnd.y);
+        ctx.moveTo(endPoint.x, endPoint.y);
         ctx.lineTo(
-            actualEnd.x - headLength * Math.cos(angle + Math.PI / 6),
-            actualEnd.y - headLength * Math.sin(angle + Math.PI / 6)
+            endPoint.x - headLength * Math.cos(angle + Math.PI / 6),
+            endPoint.y - headLength * Math.sin(angle + Math.PI / 6)
         );
         ctx.stroke();
 
         // Draw centered text for arrow if present
         if (element.text && element.text.trim() !== '') {
-            renderCenteredText(ctx, { ...element, startPoint: actualStart, endPoint: actualEnd });
+            renderCenteredText(ctx, element);
         }
     };
 
@@ -312,7 +279,41 @@ export const useRender = () => {
     const drawSelectionOutline = (
         ctx: CanvasRenderingContext2D,
         element: DrawElement,
-        multiSelectionFlag: boolean,) => {
+        multiSelectionFlag: boolean,
+    ) => {
+        // Special case for arrow: only 3 handles (2 at ends, 1 in center)
+        if (element.type === "arrow" || element.type === "line") {
+            const arrow = element as ArrowElement;
+            const { startPoint, endPoint } = arrow;
+
+            // Calculate center point
+            const centerX = (startPoint.x + endPoint.x) / 2;
+            const centerY = (startPoint.y + endPoint.y) / 2;
+
+            // Draw 3 handles: start, end, center
+            const handleSize = 10;
+            const handles = [
+                { x: startPoint.x, y: startPoint.y },
+                { x: centerX, y: centerY },
+                { x: endPoint.x, y: endPoint.y },
+            ];
+
+            ctx.save();
+            ctx.fillStyle = 'white';
+            ctx.strokeStyle = '#4285f4';
+            ctx.lineWidth = 1.5;
+            handles.forEach(handle => {
+                ctx.beginPath();
+                ctx.arc(handle.x, handle.y, handleSize / 2, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.stroke();
+            });
+            ctx.restore();
+
+            return;
+        }
+
+        // Default selection outline for other shapes
         const { x, y, width, height } = element;
         const outlinePadding = 7;
         const outlineRadius = 12;
@@ -382,6 +383,6 @@ export const useRender = () => {
         }
     };
 
-    return {renderElement};
+    return { renderElement };
 
 };

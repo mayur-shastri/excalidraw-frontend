@@ -1,9 +1,11 @@
 /*
 Todo:
 2. Make it more like eraser.io
-  2.1 : Connectors instead of plain arrows
-  2.2 : No grid -->Done
-  2.3 : 
+  2.1 : Connectors instead of plain arrows --->Done
+  2.1.1 : Selection rules for arrow must be different : 
+    -allow extending from ends only (usual selectionbox doesnt apply to it)
+    -Detaching and reattaching (remove from elements array, add back, etc)
+  2.1.2 : Warping around elements (like eraser.io, instead of straight connections)
 3. MCP server
 4. Collaboraion Feature
 5. Dark theme?
@@ -42,6 +44,7 @@ function App() {
   const [arrowStartPoint, setArrowStartPoint] = useState<ArrowPoint | null>(null);
   const [arrowEndPoint, setArrowEndPoint] = useState<ArrowPoint | null>(null);
 
+  const [connections, setConnections] = useState<Connection[]>([]);
 
   // State for zoom and pan
   const [scale, setScale] = useState<number>(1);
@@ -283,7 +286,9 @@ function App() {
         arrowStartPoint,
         setArrowStartPoint,
         arrowEndPoint,
-        setArrowEndPoint
+        setArrowEndPoint,
+        connections,
+        setConnections
       }}
     >
       <div className="w-screen h-screen overflow-hidden bg-gray-50 relative">

@@ -1,6 +1,5 @@
 import { useCanvasContext } from '../contexts/CanvasContext/CanvasContext';
 import { getRotatedCorners } from '../utils/geometry';
-import { isPointInRect } from '../utils/geometry';
 import { DrawElement, Point, ResizeDirection } from '../types';
 
 export function useCursorUtils(canvasRef: React.RefObject<HTMLCanvasElement>) {
@@ -32,12 +31,48 @@ export function useCursorUtils(canvasRef: React.RefObject<HTMLCanvasElement>) {
     const el = elements.find(e => e.id === selectedElementIds[0]);
     if (!el) return null;
 
+    // Handle Arrow/Line elements
+    if (el.type === "arrow" || el.type === "line") {
+      const handleSize = 8 / scale;
+      const tolerance = handleSize * 1.5;
+
+      // Use angle to rotate the handle positions
+      const angle = el.angle || 0;
+      const cx = el.x + el.width / 2;
+      const cy = el.y + el.height / 2;
+
+      // Calculate rotated start and end points
+      const rotatePoint = (pt: Point) => {
+        const dx = pt.x - cx;
+        const dy = pt.y - cy;
+        return {
+          x: cx + dx * Math.cos(angle) - dy * Math.sin(angle),
+          y: cy + dx * Math.sin(angle) + dy * Math.cos(angle),
+        };
+      };
+
+      const handles = [
+        { pos: rotatePoint(el.startPoint), dir: "start" as ResizeDirection },
+        { pos: rotatePoint(el.endPoint), dir: "end" as ResizeDirection }
+      ];
+
+      for (const { pos, dir } of handles) {
+        const dx = point.x - pos.x;
+        const dy = point.y - pos.y;
+        if (dx * dx + dy * dy <= tolerance * tolerance) {
+          return dir;
+        }
+      }
+      return null;
+    }
+
+    // Default for rectangle/ellipse/etc
     const { x, y, width, height, angle = 0 } = el;
     const cx = x + width / 2;
     const cy = y + height / 2;
 
     const handleSize = 8 / scale;
-    const tolerance = handleSize * 1.5; // or tweak for UX
+    const tolerance = handleSize * 1.5;
 
     const directions: { dx: number; dy: number; dir: ResizeDirection }[] = [
       { dx: -width / 2, dy: -height / 2, dir: 'nw' },
@@ -51,7 +86,6 @@ export function useCursorUtils(canvasRef: React.RefObject<HTMLCanvasElement>) {
     ];
 
     for (const { dx, dy, dir } of directions) {
-      // Rotate offset dx, dy around center
       const rotatedX = dx * Math.cos(angle) - dy * Math.sin(angle);
       const rotatedY = dx * Math.sin(angle) + dy * Math.cos(angle);
       const handleX = cx + rotatedX;
@@ -69,13 +103,37 @@ export function useCursorUtils(canvasRef: React.RefObject<HTMLCanvasElement>) {
     return null;
   };
 
-
   const checkRotateHandle = (point: Point) => {
     if (selectedElementIds.length === 0) return false;
 
     const selectedElements = elements.filter(el => selectedElementIds.includes(el.id));
     if (selectedElements.length === 0) return false;
 
+    // Special case for single arrow/line: rotation handle at midpoint
+    if (selectedElements.length === 1 && (selectedElements[0].type === "arrow" || selectedElements[0].type === "line")) {
+      const el = selectedElements[0];
+      const angle = el.angle || 0;
+      const mx = (el.startPoint.x + el.endPoint.x) / 2;
+      const my = (el.startPoint.y + el.endPoint.y) / 2;
+      const cx = el.x + el.width / 2;
+      const cy = el.y + el.height / 2;
+      const rotationHandleDistance = 0;
+
+      // Offset above the midpoint, then rotate
+      const dx = 0;
+      const dy = -rotationHandleDistance;
+      const rotatedHandle = {
+        x: mx + dx * Math.cos(angle) - dy * Math.sin(angle),
+        y: my + dx * Math.sin(angle) + dy * Math.cos(angle),
+      };
+
+      const radius = 12;
+      const dxp = point.x - rotatedHandle.x;
+      const dyp = point.y - rotatedHandle.y;
+      return dxp * dxp + dyp * dyp <= radius * radius;
+    }
+
+    // Default for other elements or multi-select
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
     selectedElements.forEach(element => {
@@ -97,22 +155,18 @@ export function useCursorUtils(canvasRef: React.RefObject<HTMLCanvasElement>) {
       const element = selectedElements[0];
       const angle = element.angle || 0;
 
-      // Element center
       const cx = element.x + element.width / 2;
       const cy = element.y + element.height / 2;
 
-      // Unrotated handle position (above top-center of the element)
       const handleX = cx;
       const handleY = element.y - rotationHandleDistance;
 
-      // Rotate handle position around the element center
       const dx = handleX - cx;
       const dy = handleY - cy;
 
       rotationHandleX = dx * Math.cos(angle) - dy * Math.sin(angle) + cx;
       rotationHandleY = dx * Math.sin(angle) + dy * Math.cos(angle) + cy;
     } else {
-      // Multiple elements: selection box does NOT rotate, so handle is at top center of axis-aligned box
       rotationHandleX = centerX;
       rotationHandleY = minY - rotationHandleDistance;
     }
@@ -139,13 +193,18 @@ export function useCursorUtils(canvasRef: React.RefObject<HTMLCanvasElement>) {
 
     const resizeDir = checkResizeHandle(point);
     if (resizeDir) {
-      const cursorMap = {
-        'n': 'ns-resize', 's': 'ns-resize',
-        'e': 'ew-resize', 'w': 'ew-resize',
-        'nw': 'nwse-resize', 'se': 'nwse-resize',
-        'ne': 'nesw-resize', 'sw': 'nesw-resize'
-      };
-      canvas.style.cursor = cursorMap[resizeDir];
+      // For arrow/line, use ew-resize for ends
+      if (resizeDir === "start" || resizeDir === "end") {
+        canvas.style.cursor = 'pointer';
+      } else {
+        const cursorMap = {
+          'n': 'ns-resize', 's': 'ns-resize',
+          'e': 'ew-resize', 'w': 'ew-resize',
+          'nw': 'nwse-resize', 'se': 'nwse-resize',
+          'ne': 'nesw-resize', 'sw': 'nesw-resize'
+        };
+        canvas.style.cursor = cursorMap[resizeDir];
+      }
     } else if (
       selectedElementIds.length > 0 &&
       findElementAtPosition(point)?.id &&

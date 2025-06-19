@@ -30,6 +30,7 @@ export type ElementBase = {
   isSelected: boolean;
   text?: string;
   isMarkedForDeletion?: boolean;
+  connectionIds: string[];
 };
 
 export type FreedrawElement = ElementBase & {
@@ -49,8 +50,7 @@ export type ArrowElement = ElementBase & {
   type: 'arrow';
   startPoint: Point;
   endPoint: Point;
-  startBinding?: { elementId: string; angle: number };
-  endBinding?: { elementId: string; angle: number };
+  connectionId : string;
 };
 
 export type LineElement = ElementBase & {
@@ -112,6 +112,8 @@ export interface CanvasProps {
   setArrowStartPoint : (point : ArrowPoint | null)=>void;
   arrowEndPoint : ArrowPoint | null;
   setArrowEndPoint : (point : ArrowPoint | null)=>void;
+  connections : Connection[];
+  setConnections : (conn : Connection[])=>void;
   selectionBox: {
     startX: number;
     startY: number;
@@ -128,7 +130,7 @@ export interface CanvasProps {
   } | null>>;
 }
 
-export type ResizeDirection = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw' | null;
+export type ResizeDirection = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw' | 'start' | 'end' | null;
 
 export interface TranslatingStartState extends Point {
   startPoint?: Point;
@@ -140,3 +142,12 @@ export interface ArrowPoint{
   elementId? : string;
   point : Point;
 }
+
+export type Connection = {
+  id: string;
+  startElementId?: string;
+  endElementId?: string;
+  startAngle?: number; // Angle from start element's center
+  endAngle?: number;   // Angle from end element's center
+  arrowElementId: string; // Optional reference to visual arrow
+};
