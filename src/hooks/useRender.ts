@@ -204,86 +204,12 @@ export const useRender = () => {
 
         ctx.stroke();
     };
-
-    // const renderArrow = (ctx: CanvasRenderingContext2D, element: ArrowElement) => {
-    //     const { startPoint, endPoint, direction, style } = element;
-    //     const strokeWidth = style.strokeWidth || 1;
-    //     const pathRadius = 16;
-    //     const headLength = 10 + strokeWidth;
-    //     const color = style.strokeColor || "#ffffff";
-
-    //     ctx.save();
-    //     ctx.strokeStyle = color;
-    //     ctx.lineWidth = strokeWidth;
-    //     ctx.lineJoin = "round";
-    //     ctx.lineCap = "round";
-
-    //     // Draw path with rounded bends (basic 2-bend manhattan routing)
-    //     const midX = (startPoint.x + endPoint.x) / 2;
-    //     const midY = (startPoint.y + endPoint.y) / 2;
-
-    //     ctx.beginPath();
-    //     ctx.moveTo(startPoint.x, startPoint.y);
-
-    //     if (Math.abs(startPoint.x - endPoint.x) > Math.abs(startPoint.y - endPoint.y)) {
-    //         // Horizontal preference
-    //         ctx.lineTo(midX, startPoint.y);
-    //         ctx.lineTo(midX, endPoint.y);
-    //     } else {
-    //         // Vertical preference
-    //         ctx.lineTo(startPoint.x, midY);
-    //         ctx.lineTo(endPoint.x, midY);
-    //     }
-
-    //     ctx.lineTo(endPoint.x, endPoint.y);
-    //     ctx.stroke();
-
-    //     // Draw arrowhead at endPoint based on direction
-    //     const drawArrowhead = (x: number, y: number, dir: 'up' | 'down' | 'left' | 'right') => {
-    //         ctx.beginPath();
-    //         switch (dir) {
-    //             case 'up':
-    //                 ctx.moveTo(x, y);
-    //                 ctx.lineTo(x - headLength, y + headLength);
-    //                 ctx.lineTo(x + headLength, y + headLength);
-    //                 break;
-    //             case 'down':
-    //                 ctx.moveTo(x, y);
-    //                 ctx.lineTo(x - headLength, y - headLength);
-    //                 ctx.lineTo(x + headLength, y - headLength);
-    //                 break;
-    //             case 'left':
-    //                 ctx.moveTo(x, y);
-    //                 ctx.lineTo(x + headLength, y - headLength);
-    //                 ctx.lineTo(x + headLength, y + headLength);
-    //                 break;
-    //             case 'right':
-    //                 ctx.moveTo(x, y);
-    //                 ctx.lineTo(x - headLength, y - headLength);
-    //                 ctx.lineTo(x - headLength, y + headLength);
-    //                 break;
-    //         }
-    //         ctx.closePath();
-    //         ctx.fillStyle = color;
-    //         ctx.fill();
-    //     };
-
-    //     drawArrowhead(endPoint.x, endPoint.y, direction);
-
-    //     // Optional: text
-    //     if (element.text?.trim()) {
-    //         renderCenteredText(ctx, element);
-    //     }
-
-    //     ctx.restore();
-    // };
-
+    
     const renderArrow = (ctx: CanvasRenderingContext2D, element: ArrowElement) => {
-        const { startPoint, endPoint, style } = element;
+        const { startPoint, endPoint, style, direction, startSide, endSide } = element;
         const strokeWidth = style.strokeWidth || 2;
         const color = style.strokeColor || "#000000";
         const arrowSize = Math.max(8, strokeWidth * 2);
-        const curveRadius = 10;
 
         ctx.save();
         ctx.strokeStyle = color;
@@ -292,83 +218,255 @@ export const useRender = () => {
         ctx.lineJoin = "round";
         ctx.lineCap = "round";
 
-        // Calculate direction vector
-        const dx = endPoint.x - startPoint.x;
-        const dy = endPoint.y - startPoint.y;
-        const angle = Math.atan2(dy, dx);
-        const length = Math.sqrt(dx * dx + dy * dy);
+        const conn = connections.find(c => c.id === element.connectionId);
+        const startElement = elements.find(el => el.id === conn?.startElementId);
+        const endElement = elements.find(el => el.id === conn?.endElementId);
 
-        // Smart path routing with smooth curves
-        if (length > 0) {
-            const controlPoints = calculateSmartControlPoints(startPoint, endPoint);
+        const startOutside = getPointOutsideElement(startElement, startPoint, endPoint, startSide);
+        const endOutside = getPointOutsideElement(endElement, endPoint, startPoint, endSide);
 
-            // Draw the curved path
-            ctx.beginPath();
-            ctx.moveTo(startPoint.x, startPoint.y);
+        const controlPoints = calculateSmartControlPoints(
+            startOutside,
+            endOutside,
+            startElement || null,
+            endElement || null,
+            startSide,
+            endSide,
+            direction
+        );
 
-            if (controlPoints.length === 1) {
-                // Simple curve
-                ctx.quadraticCurveTo(
-                    controlPoints[0].x,
-                    controlPoints[0].y,
-                    endPoint.x,
-                    endPoint.y
-                );
-            } else if (controlPoints.length === 2) {
-                // Bezier curve
-                ctx.bezierCurveTo(
-                    controlPoints[0].x,
-                    controlPoints[0].y,
-                    controlPoints[1].x,
-                    controlPoints[1].y,
-                    endPoint.x,
-                    endPoint.y
-                );
-            } else {
-                // Straight line as fallback
-                ctx.lineTo(endPoint.x, endPoint.y);
-            }
 
-            ctx.stroke();
+        // --- Draw Path ---
+        ctx.beginPath();
+        ctx.moveTo(startOutside.x, startOutside.y);
 
-            // Draw arrowhead
-            drawModernArrowhead(ctx, endPoint, angle, arrowSize);
+        // Draw through all control points
+        for (const pt of controlPoints) {
+            ctx.lineTo(pt.x, pt.y);
         }
 
-        // Optional: text rendering
+        // Final segment to end
+        ctx.lineTo(endOutside.x, endOutside.y);
+
+        ctx.stroke();
+
+        // --- Arrowhead ---
+        let arrowAngle: number;
+
+        if (endSide) {
+            switch (endSide) {
+                case 'top': arrowAngle = Math.PI / 2; break;
+                case 'bottom': arrowAngle = -Math.PI / 2; break;
+                case 'left': arrowAngle = 0; break;
+                case 'right': arrowAngle = Math.PI; break;
+                default: arrowAngle = 0;
+            }
+        } else {
+            const last = controlPoints.length > 0
+                ? controlPoints[controlPoints.length - 1]
+                : startOutside;
+            const dx = endOutside.x - last.x;
+            const dy = endOutside.y - last.y;
+            arrowAngle = Math.atan2(dy, dx);
+        }
+
+        drawModernArrowhead(ctx, endOutside, arrowAngle, arrowSize);
+
+        // --- Optional Text ---
         if (element.text?.trim()) {
-            renderCenteredText(ctx, element);
+            renderCenteredText(ctx, {
+                ...element,
+                startPoint: startOutside,
+                endPoint: endOutside
+            });
         }
 
         ctx.restore();
     };
 
-    function calculateSmartControlPoints(start: Point, end: Point): Point[] {
-        const dx = end.x - start.x;
-        const dy = end.y - start.y;
-        const minDistanceForCurve = 50;
-        const distance = Math.sqrt(dx * dx + dy * dy);
 
-        if (distance < minDistanceForCurve) {
-            return []; // Straight line for short distances
-        }
+    function getPointOutsideElement(
+        element: DrawElement | undefined,
+        fromPoint: Point,
+        toPoint: Point,
+        forceSide?: 'top' | 'bottom' | 'left' | 'right'
+    ): Point {
+        if (!element) return fromPoint;
+        const { x, y, width, height } = element;
+        const padding = 6;
 
-        // Manhattan-style routing with smooth curves
-        if (Math.abs(dx) > Math.abs(dy)) {
-            // Horizontal dominant
-            const midX = start.x + dx * 0.5;
-            return [
-                { x: midX, y: start.y },
-                { x: midX, y: end.y }
-            ];
-        } else {
-            // Vertical dominant
-            const midY = start.y + dy * 0.5;
-            return [
-                { x: start.x, y: midY },
-                { x: end.x, y: midY }
-            ];
+        switch (forceSide) {
+            case 'top':
+                return { x: x + width / 2, y: y - padding };
+            case 'bottom':
+                return { x: x + width / 2, y: y + height + padding };
+            case 'left':
+                return { x: x - padding, y: y + height / 2 };
+            case 'right':
+                return { x: x + width + padding, y: y + height / 2 };
+            default: {
+                // fallback to geometric vector logic
+                const cx = x + width / 2;
+                const cy = y + height / 2;
+                const dx = toPoint.x - cx;
+                const dy = toPoint.y - cy;
+                const len = Math.sqrt(dx * dx + dy * dy) || 1;
+                const nx = dx / len;
+                const ny = dy / len;
+
+                const sides = [
+                    { x1: x - padding, y1: y - padding, x2: x + width + padding, y2: y - padding }, // top
+                    { x1: x + width + padding, y1: y - padding, x2: x + width + padding, y2: y + height + padding }, // right
+                    { x1: x + width + padding, y1: y + height + padding, x2: x - padding, y2: y + height + padding }, // bottom
+                    { x1: x - padding, y1: y + height + padding, x2: x - padding, y2: y - padding }, // left
+                ];
+                for (const side of sides) {
+                    const intersect = lineIntersection(
+                        cx, cy, cx + nx * 9999, cy + ny * 9999,
+                        side.x1, side.y1, side.x2, side.y2
+                    );
+                    if (intersect) return intersect;
+                }
+            }
+                return fromPoint;
         }
+    }
+
+    // Returns intersection point of two lines, or null if parallel
+    function lineIntersection(
+        x1: number, y1: number, x2: number, y2: number,
+        x3: number, y3: number, x4: number, y4: number
+    ): { x: number, y: number } | null {
+        const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+        if (denom === 0) return null;
+        const px = ((x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4)) / denom;
+        const py = ((x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)) / denom;
+        // Check if intersection is within the segment
+        if (
+            Math.min(x3, x4) - 0.1 <= px && px <= Math.max(x3, x4) + 0.1 &&
+            Math.min(y3, y4) - 0.1 <= py && py <= Math.max(y3, y4) + 0.1
+        ) {
+            return { x: px, y: py };
+        }
+        return null;
+    }
+
+    const getElementCenterPoint = (element: DrawElement | null): Point | null => {
+        if (!element) return null;
+        const { x, y, width, height } = element;
+        return { x: x + width / 2, y: y + height / 2 };
+    }
+
+    function calculateSmartControlPoints(
+        start: Point,
+        end: Point,
+        startElement: DrawElement | null,
+        endElement: DrawElement | null,
+        startSide: 'top' | 'right' | 'left' | 'bottom' | null,
+        endSide: 'top' | 'right' | 'left' | 'bottom' | null,
+        direction: 'up' | 'down' | 'left' | 'right' | null,
+    ): Point[] {
+
+        const OFFSET = 15;
+
+        // Use a Set to collect unique control points as JSON strings
+        const controlPointSet = new Set<string>();
+
+        const addPoint = (pt: Point) => {
+            controlPointSet.add(JSON.stringify(pt));
+        };
+
+        const startElementCenter = getElementCenterPoint(startElement);
+        const endElementCenter = getElementCenterPoint(endElement);
+
+        if ((!startElement && !endElement)) {
+            console.log("0");
+            if (direction === 'left' || direction === 'right') {
+                addPoint({ x: start.x, y: end.y });
+            }
+            else if (direction === 'up' || direction === 'down') {
+                addPoint({ x: end.x, y: start.y });
+            }
+            return Array.from(controlPointSet).map(str => JSON.parse(str));
+        }
+        if (startElement) {
+            if (
+                startElementCenter &&
+                (
+                    // start and end are on the opposite sides of the center line (vertical or horizontal)
+                    (startSide === 'top' && end.y > startElementCenter.y) ||
+                    (startSide === 'bottom' && end.y < startElementCenter.y) ||
+                    (startSide === 'left' && end.x > startElementCenter.x) ||
+                    (startSide === 'right' && end.x < startElementCenter.x)
+                )
+            ) {
+                console.log("1");
+                // Opposite side: route around the element
+                if (startSide === 'top' || startSide === 'bottom') {
+                    addPoint({ x: start.x, y: start.y + (startSide === 'top' ? -OFFSET : OFFSET) });
+                    addPoint({ x: (end.x + start.x)/2, y: start.y + (startSide === 'top' ? -OFFSET : OFFSET) });
+                } else if (startSide === 'left' || startSide === 'right') {
+                    addPoint({ x: start.x + (startSide === 'left' ? -OFFSET : OFFSET), y: start.y });
+                    addPoint({ x: start.x + (startSide === 'left' ? -OFFSET : OFFSET), y: end.y });
+                }
+            }
+            else if (
+                startElementCenter &&
+                (
+                    (startSide === 'top' && end.y < startElementCenter.y) ||
+                    (startSide === 'bottom' && end.y > startElementCenter.y) ||
+                    (startSide === 'left' && end.x < startElementCenter.x) ||
+                    (startSide === 'right' && end.x > startElementCenter.x)
+                )
+            ) {
+                console.log("2");
+                if (startSide === 'top' || startSide === 'bottom') {
+                    addPoint({ x: start.x, y: (start.y + end.y)/2 });
+                } else if (startSide === 'left' || startSide === 'right') {
+                    addPoint({ x: (start.x + end.x)/2, y: start.y });
+                }
+            }
+        }
+        if (endElement) {
+            if (
+                endElementCenter &&
+                (
+                    // End is on the opposite side of the center (should route around)
+                    (endSide === 'top' && start.y > endElementCenter.y) ||
+                    (endSide === 'bottom' && start.y < endElementCenter.y) ||
+                    (endSide === 'left' && start.x > endElementCenter.x) ||
+                    (endSide === 'right' && start.x < endElementCenter.x)
+                )
+            ) {
+                console.log("3");
+                // Opposite side: route around the end element
+                if (endSide === 'top' || endSide === 'bottom') {
+                    addPoint({ x: (start.x + end.x)/2, y: end.y + (endSide === 'top' ? -OFFSET : OFFSET) });
+                    addPoint({ x: end.x, y: end.y + (endSide === 'top' ? -OFFSET : OFFSET) });
+                } else if (endSide === 'left' || endSide === 'right') {
+                    addPoint({ x: end.x + (endSide === 'left' ? OFFSET : -OFFSET), y: start.y });
+                    addPoint({ x: end.x + (endSide === 'left' ? OFFSET : -OFFSET), y: end.y });
+                }
+            } else if (
+                endElementCenter &&
+                (
+                    // End is in the expected direction (directly approachable)
+                    (endSide === 'top' && start.y < endElementCenter.y) ||
+                    (endSide === 'bottom' && start.y > endElementCenter.y) ||
+                    (endSide === 'left' && start.x < endElementCenter.x) ||
+                    (endSide === 'right' && start.x > endElementCenter.x)
+                )
+            ) {
+                console.log("4");
+                if (endSide === 'top' || endSide === 'bottom') {
+                    addPoint({ x: (start.x + end.x)/2, y: end.y + (endSide === 'top' ? -OFFSET : OFFSET) });
+                    addPoint({ x: end.x, y: end.y + (endSide === 'top' ? -OFFSET : OFFSET) });
+                } else if (endSide === 'left' || endSide === 'right') {
+                    addPoint({ x: (start.x + end.x)/2, y: end.y });
+                }
+            }
+        }
+        return Array.from(controlPointSet).map(str => JSON.parse(str));
     }
 
     function drawModernArrowhead(
@@ -382,9 +480,11 @@ export const useRender = () => {
         ctx.rotate(angle);
 
         ctx.beginPath();
+        // Sleeker arrowhead: longer and narrower
         ctx.moveTo(0, 0);
-        ctx.lineTo(-size, -size / 2);
-        ctx.lineTo(-size, size / 2);
+        ctx.lineTo(-size * 1.2, -size * 0.45);
+        ctx.lineTo(-size * 0.7, 0);
+        ctx.lineTo(-size * 1.2, size * 0.45);
         ctx.closePath();
         ctx.fill();
 

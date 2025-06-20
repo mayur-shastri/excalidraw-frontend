@@ -456,7 +456,6 @@ const Canvas: React.FC = () => {
 
   const updateElement = (element: DrawElement, currentPoint: Point, startPoint: Point): DrawElement => {
     const updated = { ...element };
-
     switch (element.type) {
       case 'freedraw': {
         // Add the new point to the points array
@@ -490,8 +489,8 @@ const Canvas: React.FC = () => {
 
       case 'arrow':
       case 'line': {
-        if (element.type === 'arrow' && arrowStartPoint) {
-          const start = arrowStartPoint.point;
+        if (element.type === 'arrow' && element.startPoint) {
+          const start = element.startPoint;
           let direction: 'up' | 'down' | 'left' | 'right' = 'right';
 
           if(currentPoint.x >= start.x){
@@ -674,10 +673,6 @@ const Canvas: React.FC = () => {
       }))
     );
   }, [selectedElementIds]);
-
-  useEffect(() => {
-    console.log(elements[elements.length - 1]);
-  }, [elements]);
 
   return (
     <canvas
