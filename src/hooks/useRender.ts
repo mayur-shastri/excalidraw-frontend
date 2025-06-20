@@ -204,7 +204,7 @@ export const useRender = () => {
 
         ctx.stroke();
     };
-    
+
     const renderArrow = (ctx: CanvasRenderingContext2D, element: ArrowElement) => {
         const { startPoint, endPoint, style, direction, startSide, endSide } = element;
         const strokeWidth = style.strokeWidth || 2;
@@ -357,6 +357,118 @@ export const useRender = () => {
         return { x: x + width / 2, y: y + height / 2 };
     }
 
+    // function calculateSmartControlPoints(
+    //     start: Point,
+    //     end: Point,
+    //     startElement: DrawElement | null,
+    //     endElement: DrawElement | null,
+    //     startSide: 'top' | 'right' | 'left' | 'bottom' | null,
+    //     endSide: 'top' | 'right' | 'left' | 'bottom' | null,
+    //     direction: 'up' | 'down' | 'left' | 'right' | null,
+    // ): Point[] {
+
+    //     const OFFSET = 15;
+
+    //     // Use a Set to collect unique control points as JSON strings
+    //     const controlPointSet = new Set<string>();
+
+    //     const addPoint = (pt: Point) => {
+    //         controlPointSet.add(JSON.stringify(pt));
+    //     };
+
+    //     const startElementCenter = getElementCenterPoint(startElement);
+    //     const endElementCenter = getElementCenterPoint(endElement);
+
+    //     if ((!startElement && !endElement)) {
+    //         console.log("0");
+    //         if (direction === 'left' || direction === 'right') {
+    //             addPoint({ x: start.x, y: end.y });
+    //         }
+    //         else if (direction === 'up' || direction === 'down') {
+    //             addPoint({ x: end.x, y: start.y });
+    //         }
+    //         return Array.from(controlPointSet).map(str => JSON.parse(str));
+    //     }
+    //     if (startElement) {
+    //         if (
+    //             startElementCenter &&
+    //             (
+    //                 // start and end are on the opposite sides of the center line (vertical or horizontal)
+    //                 (startSide === 'top' && end.y > startElementCenter.y) ||
+    //                 (startSide === 'bottom' && end.y < startElementCenter.y) ||
+    //                 (startSide === 'left' && end.x > startElementCenter.x) ||
+    //                 (startSide === 'right' && end.x < startElementCenter.x)
+    //             )
+    //         ) {
+    //             console.log("1");
+    //             // Opposite side: route around the element
+    //             if (startSide === 'top' || startSide === 'bottom') {
+    //                 addPoint({ x: start.x, y: start.y + (startSide === 'top' ? -OFFSET : OFFSET) });
+    //                 addPoint({ x: (end.x + start.x)/2, y: start.y + (startSide === 'top' ? -OFFSET : OFFSET) });
+    //             } else if (startSide === 'left' || startSide === 'right') {
+    //                 addPoint({ x: start.x + (startSide === 'left' ? -OFFSET : OFFSET), y: start.y });
+    //                 addPoint({ x: start.x + (startSide === 'left' ? -OFFSET : OFFSET), y: end.y });
+    //             }
+    //         }
+    //         else if (
+    //             startElementCenter &&
+    //             (
+    //                 (startSide === 'top' && end.y < startElementCenter.y) ||
+    //                 (startSide === 'bottom' && end.y > startElementCenter.y) ||
+    //                 (startSide === 'left' && end.x < startElementCenter.x) ||
+    //                 (startSide === 'right' && end.x > startElementCenter.x)
+    //             )
+    //         ) {
+    //             console.log("2");
+    //             if (startSide === 'top' || startSide === 'bottom') {
+    //                 addPoint({ x: start.x, y: (start.y + end.y)/2 });
+    //             } else if (startSide === 'left' || startSide === 'right') {
+    //                 addPoint({ x: (start.x + end.x)/2, y: start.y });
+    //             }
+    //         }
+    //     }
+    //     if (endElement) {
+    //         if (
+    //             endElementCenter &&
+    //             (
+    //                 // End is on the opposite side of the center (should route around)
+    //                 (endSide === 'top' && start.y > endElementCenter.y) ||
+    //                 (endSide === 'bottom' && start.y < endElementCenter.y) ||
+    //                 (endSide === 'left' && start.x > endElementCenter.x) ||
+    //                 (endSide === 'right' && start.x < endElementCenter.x)
+    //             )
+    //         ) {
+    //             console.log("3");
+    //             // Opposite side: route around the end element
+    //             if (endSide === 'top' || endSide === 'bottom') {
+    //                 addPoint({ x: (start.x + end.x)/2, y: end.y + (endSide === 'top' ? -OFFSET : OFFSET) });
+    //                 addPoint({ x: end.x, y: end.y + (endSide === 'top' ? -OFFSET : OFFSET) });
+    //             } else if (endSide === 'left' || endSide === 'right') {
+    //                 addPoint({ x: end.x + (endSide === 'left' ? OFFSET : -OFFSET), y: start.y });
+    //                 addPoint({ x: end.x + (endSide === 'left' ? OFFSET : -OFFSET), y: end.y });
+    //             }
+    //         } else if (
+    //             endElementCenter &&
+    //             (
+    //                 // End is in the expected direction (directly approachable)
+    //                 (endSide === 'top' && start.y < endElementCenter.y) ||
+    //                 (endSide === 'bottom' && start.y > endElementCenter.y) ||
+    //                 (endSide === 'left' && start.x < endElementCenter.x) ||
+    //                 (endSide === 'right' && start.x > endElementCenter.x)
+    //             )
+    //         ) {
+    //             console.log("4");
+    //             if (endSide === 'top' || endSide === 'bottom') {
+    //                 addPoint({ x: (start.x + end.x)/2, y: end.y + (endSide === 'top' ? -OFFSET : OFFSET) });
+    //                 addPoint({ x: end.x, y: end.y + (endSide === 'top' ? -OFFSET : OFFSET) });
+    //             } else if (endSide === 'left' || endSide === 'right') {
+    //                 addPoint({ x: (start.x + end.x)/2, y: end.y });
+    //             }
+    //         }
+    //     }
+    //     return Array.from(controlPointSet).map(str => JSON.parse(str));
+    // }
+
     function calculateSmartControlPoints(
         start: Point,
         end: Point,
@@ -366,108 +478,75 @@ export const useRender = () => {
         endSide: 'top' | 'right' | 'left' | 'bottom' | null,
         direction: 'up' | 'down' | 'left' | 'right' | null,
     ): Point[] {
-
         const OFFSET = 15;
+        const controlPoints: Point[] = [];
 
-        // Use a Set to collect unique control points as JSON strings
-        const controlPointSet = new Set<string>();
+        const midX = (start.x + end.x) / 2;
+        const midY = (start.y + end.y) / 2;
 
-        const addPoint = (pt: Point) => {
-            controlPointSet.add(JSON.stringify(pt));
-        };
+        const add = (pt: Point) => controlPoints.push(pt);
 
-        const startElementCenter = getElementCenterPoint(startElement);
-        const endElementCenter = getElementCenterPoint(endElement);
+        const startCenter = getElementCenterPoint(startElement);
+        const endCenter = getElementCenterPoint(endElement);
 
-        if ((!startElement && !endElement)) {
-            console.log("0");
+        if (!startElement && !endElement) {
             if (direction === 'left' || direction === 'right') {
-                addPoint({ x: start.x, y: end.y });
+                add({ x: midX, y: start.y });
+                add({ x: midX, y: end.y });
+            } else if (direction === 'up' || direction === 'down') {
+                add({ x: start.x, y: midY });
+                add({ x: end.x, y: midY });
             }
-            else if (direction === 'up' || direction === 'down') {
-                addPoint({ x: end.x, y: start.y });
-            }
-            return Array.from(controlPointSet).map(str => JSON.parse(str));
+            return controlPoints;
         }
-        if (startElement) {
-            if (
-                startElementCenter &&
-                (
-                    // start and end are on the opposite sides of the center line (vertical or horizontal)
-                    (startSide === 'top' && end.y > startElementCenter.y) ||
-                    (startSide === 'bottom' && end.y < startElementCenter.y) ||
-                    (startSide === 'left' && end.x > startElementCenter.x) ||
-                    (startSide === 'right' && end.x < startElementCenter.x)
-                )
-            ) {
-                console.log("1");
-                // Opposite side: route around the element
-                if (startSide === 'top' || startSide === 'bottom') {
-                    addPoint({ x: start.x, y: start.y + (startSide === 'top' ? -OFFSET : OFFSET) });
-                    addPoint({ x: (end.x + start.x)/2, y: start.y + (startSide === 'top' ? -OFFSET : OFFSET) });
-                } else if (startSide === 'left' || startSide === 'right') {
-                    addPoint({ x: start.x + (startSide === 'left' ? -OFFSET : OFFSET), y: start.y });
-                    addPoint({ x: start.x + (startSide === 'left' ? -OFFSET : OFFSET), y: end.y });
-                }
+
+        // Always start with an outward OFFSET from start side
+        if (startSide === 'top') {
+            add({ x: start.x, y: start.y - OFFSET });
+        } else if (startSide === 'bottom') {
+            add({ x: start.x, y: start.y + OFFSET });
+        } else if (startSide === 'left') {
+            add({ x: start.x - OFFSET, y: start.y });
+        } else if (startSide === 'right') {
+            add({ x: start.x + OFFSET, y: start.y });
+        }
+
+        // Now determine routing based on both sides
+        if (startSide === 'top' || startSide === 'bottom') {
+            if (endSide === 'top' || endSide === 'bottom') {
+                // Vertical→Vertical
+                add({ x: midX, y: controlPoints.at(-1)!.y }); // Horizontal
+                add({ x: midX, y: end.y + (endSide === 'top' ? -OFFSET : OFFSET) }); // Vertical toward end
+            } else {
+                // Vertical→Horizontal
+                add({ x: end.x + (endSide === 'left' ? -OFFSET : OFFSET), y: controlPoints.at(-1)!.y });
+                add({ x: end.x + (endSide === 'left' ? -OFFSET : OFFSET), y: end.y });
             }
-            else if (
-                startElementCenter &&
-                (
-                    (startSide === 'top' && end.y < startElementCenter.y) ||
-                    (startSide === 'bottom' && end.y > startElementCenter.y) ||
-                    (startSide === 'left' && end.x < startElementCenter.x) ||
-                    (startSide === 'right' && end.x > startElementCenter.x)
-                )
-            ) {
-                console.log("2");
-                if (startSide === 'top' || startSide === 'bottom') {
-                    addPoint({ x: start.x, y: (start.y + end.y)/2 });
-                } else if (startSide === 'left' || startSide === 'right') {
-                    addPoint({ x: (start.x + end.x)/2, y: start.y });
-                }
+        } else if (startSide === 'left' || startSide === 'right') {
+            if (endSide === 'left' || endSide === 'right') {
+                // Horizontal→Horizontal
+                add({ x: controlPoints.at(-1)!.x, y: midY }); // Vertical
+                add({ x: end.x + (endSide === 'left' ? -OFFSET : OFFSET), y: midY });
+            } else {
+                // Horizontal→Vertical
+                add({ x: controlPoints.at(-1)!.x, y: end.y + (endSide === 'top' ? -OFFSET : OFFSET) });
             }
         }
-        if (endElement) {
-            if (
-                endElementCenter &&
-                (
-                    // End is on the opposite side of the center (should route around)
-                    (endSide === 'top' && start.y > endElementCenter.y) ||
-                    (endSide === 'bottom' && start.y < endElementCenter.y) ||
-                    (endSide === 'left' && start.x > endElementCenter.x) ||
-                    (endSide === 'right' && start.x < endElementCenter.x)
-                )
-            ) {
-                console.log("3");
-                // Opposite side: route around the end element
-                if (endSide === 'top' || endSide === 'bottom') {
-                    addPoint({ x: (start.x + end.x)/2, y: end.y + (endSide === 'top' ? -OFFSET : OFFSET) });
-                    addPoint({ x: end.x, y: end.y + (endSide === 'top' ? -OFFSET : OFFSET) });
-                } else if (endSide === 'left' || endSide === 'right') {
-                    addPoint({ x: end.x + (endSide === 'left' ? OFFSET : -OFFSET), y: start.y });
-                    addPoint({ x: end.x + (endSide === 'left' ? OFFSET : -OFFSET), y: end.y });
-                }
-            } else if (
-                endElementCenter &&
-                (
-                    // End is in the expected direction (directly approachable)
-                    (endSide === 'top' && start.y < endElementCenter.y) ||
-                    (endSide === 'bottom' && start.y > endElementCenter.y) ||
-                    (endSide === 'left' && start.x < endElementCenter.x) ||
-                    (endSide === 'right' && start.x > endElementCenter.x)
-                )
-            ) {
-                console.log("4");
-                if (endSide === 'top' || endSide === 'bottom') {
-                    addPoint({ x: (start.x + end.x)/2, y: end.y + (endSide === 'top' ? -OFFSET : OFFSET) });
-                    addPoint({ x: end.x, y: end.y + (endSide === 'top' ? -OFFSET : OFFSET) });
-                } else if (endSide === 'left' || endSide === 'right') {
-                    addPoint({ x: (start.x + end.x)/2, y: end.y });
-                }
-            }
+
+        // Final approach to end with OFFSET
+        if (endSide === 'top') {
+            add({ x: end.x, y: end.y - OFFSET });
+        } else if (endSide === 'bottom') {
+            add({ x: end.x, y: end.y + OFFSET });
+        } else if (endSide === 'left') {
+            add({ x: end.x - OFFSET, y: end.y });
+        } else if (endSide === 'right') {
+            add({ x: end.x + OFFSET, y: end.y });
         }
-        return Array.from(controlPointSet).map(str => JSON.parse(str));
+
+        return controlPoints;
     }
+
 
     function drawModernArrowhead(
         ctx: CanvasRenderingContext2D,
