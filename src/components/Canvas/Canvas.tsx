@@ -10,7 +10,7 @@ import { TranslatingStartState } from '../../types';
 import { useTranslateElements } from '../../hooks/useTranslateElements';
 import { useCanvasContext } from '../../contexts/CanvasContext/CanvasContext';
 import { defaultStyle } from '../../constants';
-import { useRender } from '../../hooks/useRender';
+import { useRender } from '../../hooks/useRender/useRender';
 import { Connection } from '../../types';
 
 const Canvas: React.FC = () => {

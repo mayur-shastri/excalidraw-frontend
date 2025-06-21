@@ -2,7 +2,7 @@ import { useCanvasContext } from '../contexts/CanvasContext/CanvasContext';
 import { getRotatedCorners } from '../utils/geometry';
 import { DrawElement } from '../types';
 import { defaultStyle } from '../constants';
-import { useRender } from './useRender';
+import { useRender } from './useRender/useRender';
 // import { renderElement } from '../utils/renderElements';
 
 export function useDrawOnCanvas(canvasRef: React.RefObject<HTMLCanvasElement>, isDrawing: boolean) {
