@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useCanvasContext } from "../contexts/CanvasContext/CanvasContext";
-import { DrawElement, Point, ResizeDirection } from "../types";
+import { ArrowElement, DrawElement, LineElement, Point, ResizeDirection } from "../types";
 import { getRotatedCorners } from "../utils/geometry";
 
 const ROTATION_THRESHOLD = 0.01;
@@ -28,6 +28,47 @@ export function useRotateAndResizeElements() {
     const [originalElements, setOriginalElements] = useState<DrawElement[]>([]);
     const [rotationStartPoint, setRotationStartPoint] = useState<Point | null>(null);
 
+    const resizeLineOrFreeArrow = (
+        element: ArrowElement | LineElement,
+        deltaX: number,
+        deltaY: number,
+        resizeDirection: ResizeDirection
+    ) => {
+        // Use the original startPoint and endPoint from originalElements
+        const originalElement = originalElements.find(el => el.id === element.id) as ArrowElement | LineElement | undefined;
+        if (!originalElement) return element;
+        const { startPoint, endPoint } = originalElement;
+
+        // Calculate the vector from start to end
+        const origDx = endPoint.x - startPoint.x;
+        const origDy = endPoint.y - startPoint.y;
+        const origLength = Math.sqrt(origDx * origDx + origDy * origDy);
+
+        // Direction vector (unit)
+        const dirX = origDx / (origLength || 1);
+        const dirY = origDy / (origLength || 1);
+
+        // Project delta onto the direction of the line
+        const projectedDelta = deltaX * dirX + deltaY * dirY;
+
+        // Only move the selected handle
+        if (resizeDirection === "end") {
+            // Move the end point
+            const newEnd = {
+                x: endPoint.x + projectedDelta * dirX,
+                y: endPoint.y + projectedDelta * dirY,
+            };
+            return { ...element, startPoint, endPoint: newEnd };
+        } else {
+            // Move the start point
+            const newStart = {
+                x: startPoint.x + projectedDelta * dirX,
+                y: startPoint.y + projectedDelta * dirY,
+            };
+            return { ...element, startPoint: newStart, endPoint };
+        }
+    }
+
     const resizeElements = (direction: ResizeDirection, start: Point, current: Point) => {
         if (!direction || selectedElementIds.length === 0) return;
 
@@ -37,29 +78,6 @@ export function useRotateAndResizeElements() {
         setElements(prevElements => {
             return prevElements.map(element => {
                 const isSelected = selectedElementIds.includes(element.id);
-
-                // Arrow auto-adjustment
-                if (element.type === 'arrow') {
-                    const connection = connections.find(c => c.arrowElementId === element.id);
-                    if (!connection) return element;
-
-                    const startEl = prevElements.find(e => e.id === connection.startElementId);
-                    const endEl = prevElements.find(e => e.id === connection.endElementId);
-
-                    const newStart = (startEl && selectedElementIds.includes(startEl.id) && connection.startAngle !== undefined)
-                        ? getConnectedPoint(startEl, connection.startAngle)
-                        : element.startPoint;
-
-                    const newEnd = (endEl && selectedElementIds.includes(endEl.id) && connection.endAngle !== undefined)
-                        ? getConnectedPoint(endEl, connection.endAngle)
-                        : element.endPoint;
-
-                    return {
-                        ...element,
-                        startPoint: newStart,
-                        endPoint: newEnd,
-                    };
-                }
 
                 if (!isSelected) return element;
                 const originalElement = originalElements.find(el => el.id === element.id);
@@ -74,12 +92,25 @@ export function useRotateAndResizeElements() {
                     return newElement;
                 }
 
-                if (element.type === 'line' || element.type === 'arrow') {
-                    // Direct resizing of lines
-                    // ...
-                    return newElement;
+                if (element.type === 'line') {
+                    return resizeLineOrFreeArrow(element, deltaX, deltaY, direction);
                 }
 
+                if (element.type === 'arrow') {
+                    const { connectionId } = element;
+                    const conn = connections.find(c => c.id === connectionId);
+                    if (conn) {
+                        const { startElementId, endElementId } = conn;
+                        if (!startElementId && !endElementId) {
+                            return resizeLineOrFreeArrow(element, deltaX, deltaY, direction);
+                        }
+                        else {
+                            return null;
+                            // to be continued
+                        }
+                    }
+
+                }
                 // Default shape resize
                 switch (direction) {
                     case 'nw':
@@ -156,53 +187,53 @@ export function useRotateAndResizeElements() {
 
                     // Arrows update based on connected element rotation
                     if (el.type === 'arrow') {
-                        const connection = connections.find(c => c.arrowElementId === el.id);
-                        if (!connection) return el;
-
-                        const startEl = prevElements.find(e => e.id === connection.startElementId);
-                        const endEl = prevElements.find(e => e.id === connection.endElementId);
-
-                        const newStart = (startEl && isSelected && connection.startAngle !== undefined)
-                            ? getConnectedPoint(startEl, connection.startAngle)
-                            : el.startPoint;
-
-                        const newEnd = (endEl && isSelected && connection.endAngle !== undefined)
-                            ? getConnectedPoint(endEl, connection.endAngle)
-                            : el.endPoint;
-
-                        return {
-                            ...el,
-                            startPoint: newStart,
-                            endPoint: newEnd,
-                        };
+                        const conn = connections.find(c => c.arrowElementId === el.id);
+                        if (!conn) return el;
+                        if (!conn.startElementId && !conn.endElementId) {
+                            return rotationHelper(el, centerX, centerY, angleDelta, isSelected);
+                        }
+                        else{
+                            // to be continued
+                            return el;
+                        }
                     }
 
-                    if (!isSelected) return el;
+                    return rotationHelper(el, centerX, centerY, angleDelta, isSelected);
 
-                    const cx = el.x + el.width / 2;
-                    const cy = el.y + el.height / 2;
-
-                    const dx = cx - centerX;
-                    const dy = cy - centerY;
-
-                    const rotatedCx = centerX + (dx * Math.cos(angleDelta) - dy * Math.sin(angleDelta));
-                    const rotatedCy = centerY + (dx * Math.sin(angleDelta) + dy * Math.cos(angleDelta));
-
-                    const newX = rotatedCx - el.width / 2;
-                    const newY = rotatedCy - el.height / 2;
-
-                    return {
-                        ...el,
-                        x: newX,
-                        y: newY,
-                        angle: ((el.angle || 0) + angleDelta) % (2 * Math.PI),
-                    };
                 });
             });
 
             setRotationStartPoint(currentPoint);
         }
     };
+
+    const rotationHelper = (
+        el: DrawElement, 
+        centerX: number, 
+        centerY: number, 
+        angleDelta: number,
+        isSelected :  boolean) => {
+        if (!isSelected) return el;
+
+        const cx = el.x + el.width / 2;
+        const cy = el.y + el.height / 2;
+
+        const dx = cx - centerX;
+        const dy = cy - centerY;
+
+        const rotatedCx = centerX + (dx * Math.cos(angleDelta) - dy * Math.sin(angleDelta));
+        const rotatedCy = centerY + (dx * Math.sin(angleDelta) + dy * Math.cos(angleDelta));
+
+        const newX = rotatedCx - el.width / 2;
+        const newY = rotatedCy - el.height / 2;
+
+        return {
+            ...el,
+            x: newX,
+            y: newY,
+            angle: ((el.angle || 0) + angleDelta) % (2 * Math.PI),
+        };
+    }
 
     return {
         resizeElements,

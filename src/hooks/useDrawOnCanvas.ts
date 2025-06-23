@@ -3,7 +3,6 @@ import { getRotatedCorners } from '../utils/geometry';
 import { DrawElement } from '../types';
 import { defaultStyle } from '../constants';
 import { useRender } from './useRender/useRender';
-// import { renderElement } from '../utils/renderElements';
 
 export function useDrawOnCanvas(canvasRef: React.RefObject<HTMLCanvasElement>, isDrawing: boolean) {
   const {
@@ -128,7 +127,6 @@ export function useDrawOnCanvas(canvasRef: React.RefObject<HTMLCanvasElement>, i
       ctx.save();
       ctx.strokeStyle = '#3b82f6'; // Blue color for highlight
       ctx.lineWidth = 2 / scale; // Scale the line width appropriately
-
       // Draw the silhouette/highlight
       renderElement(ctx, {
         ...hoveredElement,

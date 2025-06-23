@@ -1,14 +1,79 @@
-import { ArrowElement, DrawElement, ResizeHandle } from "../../types";
+import { ArrowElement, Connection, DrawElement, LineElement, ResizeHandle } from "../../types";
 
 export const drawSelectionOutline = (
     ctx: CanvasRenderingContext2D,
     element: DrawElement,
     multiSelectionFlag: boolean,
+    connections: Connection[],
+    elements: DrawElement[]
 ) => {
     // Special case for arrow: only 3 handles (2 at ends, 1 in center)
-    if (element.type === "arrow" || element.type === "line") {
+    if (element.type === "arrow") {
         const arrow = element as ArrowElement;
-        const { startPoint, endPoint } = arrow;
+        let { startPoint, endPoint } = arrow;
+
+        const conn = connections.find(c => c.id === arrow.connectionId);
+
+        if (!conn) return;
+
+        const { startElementId, endElementId } = conn;
+
+
+        if (startElementId) {
+            const startElement = elements.find(el => el.id === startElementId);
+            if (startElement) {
+                const { x, y, width, height } = startElement;
+                if (arrow.startSide === 'top' || arrow.startSide === 'bottom')
+                    startPoint = { x: x + width / 2, y: y + (arrow.startSide === 'bottom' ? height : 0) };
+                else
+                    startPoint = { x: x + (arrow.startSide === 'right' ? width : 0), y: y + height / 2 };
+            }
+        }
+
+        if (endElementId) {
+            const endElement = elements.find(el => el.id === endElementId);
+            if (endElement) {
+                const { x, y, width, height } = endElement;
+                if (arrow.endSide === 'top' || arrow.endSide === 'bottom')
+                    endPoint = { x: x + width / 2, y: y + (arrow.endSide === 'bottom' ? height : 0) };
+                else
+                    endPoint = { x: x + (arrow.endSide === 'right' ? width : 0), y: y + height / 2 };
+            }
+        }
+
+        // Calculate center point
+        
+        // Draw 3 handles: start, end, center
+        const handleSize = 10;
+        const handles = [
+            { x: startPoint.x, y: startPoint.y },
+            { x: endPoint.x, y: endPoint.y },
+        ];
+        if(!startElementId && !endElementId){
+            const centerX = (startPoint.x + endPoint.x) / 2;
+            const centerY = (startPoint.y + endPoint.y) / 2;
+            handles.push({x : centerX, y : centerY});
+        }
+
+        ctx.save();
+        ctx.fillStyle = 'white';
+        ctx.strokeStyle = '#4285f4';
+        ctx.lineWidth = 1.5;
+        handles.forEach(handle => {
+            ctx.beginPath();
+            ctx.arc(handle.x, handle.y, handleSize / 2, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+        });
+        ctx.restore();
+
+        return;
+    }
+    
+    if (element.type === "line") {
+        const line = element as LineElement;
+        const { startPoint, endPoint } = line;
+
 
         // Calculate center point
         const centerX = (startPoint.x + endPoint.x) / 2;
@@ -18,8 +83,8 @@ export const drawSelectionOutline = (
         const handleSize = 10;
         const handles = [
             { x: startPoint.x, y: startPoint.y },
-            { x: centerX, y: centerY },
             { x: endPoint.x, y: endPoint.y },
+            { x: centerX, y: centerY },
         ];
 
         ctx.save();

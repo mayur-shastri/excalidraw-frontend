@@ -1,7 +1,12 @@
 import { ArrowElement, DrawElement, Point, Connection } from "../../types";
 
-export const renderArrow = (ctx: CanvasRenderingContext2D, element: ArrowElement, connections : Connection[], elements: DrawElement[]) => {
-    const { startPoint, endPoint, style, direction, startSide, endSide, connectionId } = element;
+export const renderArrow = (
+    ctx: CanvasRenderingContext2D,
+    element: ArrowElement,
+    connections: Connection[],
+    elements: DrawElement[],
+) => {
+    const { startPoint, endPoint, style, startSide, endSide, connectionId } = element;
     const strokeWidth = style.strokeWidth || 2;
     const color = style.strokeColor || "#000000";
     const arrowSize = Math.max(8, strokeWidth * 2);
@@ -27,9 +32,7 @@ export const renderArrow = (ctx: CanvasRenderingContext2D, element: ArrowElement
         endElement || null,
         startSide,
         endSide,
-        direction
     );
-
 
     // --- Draw Sharp Path ---
     ctx.beginPath();
@@ -86,8 +89,8 @@ export const renderArrow = (ctx: CanvasRenderingContext2D, element: ArrowElement
     drawModernArrowhead(ctx, endOutside, arrowAngle, arrowSize);
 
     ctx.restore();
-};
 
+};
 
 function getPointOutsideElement(
     element: DrawElement | undefined,
@@ -182,7 +185,6 @@ function calculateSmartControlPoints(
         // }
         return controlPoints;
     }
-    console.log("YHe");
     // Always start with an outward OFFSET from start side
     if (startSide === 'top') {
         add({ x: start.x, y: start.y - OFFSET });
@@ -198,21 +200,21 @@ function calculateSmartControlPoints(
     if (startSide === 'top' || startSide === 'bottom') {
         if (endSide === 'top' || endSide === 'bottom') {
             // Vertical→Vertical
-            add({ x: midX, y: controlPoints.at(-1)!.y }); // Horizontal
+            add({ x: midX, y: controlPoints[controlPoints.length - 1]!.y }); // Horizontal
             add({ x: midX, y: end.y + (endSide === 'top' ? -OFFSET : OFFSET) }); // Vertical toward end
         } else {
             // Vertical→Horizontal
-            add({ x: end.x + (endSide === 'left' ? -OFFSET : OFFSET), y: controlPoints.at(-1)!.y });
+            add({ x: end.x + (endSide === 'left' ? -OFFSET : OFFSET), y: controlPoints[controlPoints.length - 1]!.y });
             add({ x: end.x + (endSide === 'left' ? -OFFSET : OFFSET), y: end.y });
         }
     } else if (startSide === 'left' || startSide === 'right') {
         if (endSide === 'left' || endSide === 'right') {
             // Horizontal→Horizontal
-            add({ x: controlPoints.at(-1)!.x, y: midY }); // Vertical
+            add({ x: controlPoints[controlPoints.length - 1]!.x, y: midY }); // Vertical
             add({ x: end.x + (endSide === 'left' ? -OFFSET : OFFSET), y: midY });
         } else {
             // Horizontal→Vertical
-            add({ x: controlPoints.at(-1)!.x, y: end.y + (endSide === 'top' ? -OFFSET : OFFSET) });
+            add({ x: controlPoints[controlPoints.length - 1]!.x, y: end.y + (endSide === 'top' ? -OFFSET : OFFSET) });
         }
     }
 
@@ -229,7 +231,6 @@ function calculateSmartControlPoints(
 
     return controlPoints;
 }
-
 
 function drawModernArrowhead(
     ctx: CanvasRenderingContext2D,

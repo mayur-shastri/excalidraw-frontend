@@ -1,5 +1,6 @@
+import { useRef } from "react";
 import { useCanvasContext } from "../../contexts/CanvasContext/CanvasContext";
-import { ArrowElement, DrawElement, FreedrawElement, LineElement, TextElement } from "../../types";
+import { ArrowElement, DrawElement, FreedrawElement, LineElement, Point, TextElement } from "../../types";
 import { renderArrow } from "./renderArrow";
 import { renderDiamond } from "./renderDiamond";
 import { renderEllipse } from "./renderEllipse";
@@ -46,9 +47,10 @@ export const useRender = () => {
             case 'ellipse':
                 renderEllipse(ctx, element);
                 break;
-            case 'arrow':
+            case 'arrow': {
                 renderArrow(ctx, element as ArrowElement, connections, elements);
                 break;
+            }
             case 'line':
                 renderLine(ctx, element as LineElement);
                 break;
@@ -74,12 +76,12 @@ export const useRender = () => {
         }
 
         if (isSelected) {
-            drawSelectionOutline(ctx, element, multiSelectionFlag);
+            drawSelectionOutline(ctx, element, multiSelectionFlag, connections, elements);
         }
 
         ctx.restore();
     };
 
-    return { renderElement };
+    return { renderElement};
 
 };

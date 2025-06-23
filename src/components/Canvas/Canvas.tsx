@@ -1,7 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { ArrowElement, DrawElement, ElementType, LineElement, Point, ResizeDirection, TextElement } from '../../types';
-// import { renderElement } from '../../utils/renderElements';
-
 import { calculateClosestBoundaryPoint, generateId } from '../../utils/helpers';
 import { useDrawOnCanvas } from '../../hooks/useDrawOnCanvas';
 import { useCursorUtils } from '../../hooks/useCursorUtils';
@@ -12,6 +10,7 @@ import { useCanvasContext } from '../../contexts/CanvasContext/CanvasContext';
 import { defaultStyle } from '../../constants';
 import { useRender } from '../../hooks/useRender/useRender';
 import { Connection } from '../../types';
+import { flushSync } from 'react-dom';
 
 const Canvas: React.FC = () => {
 
@@ -51,7 +50,7 @@ const Canvas: React.FC = () => {
   const { resizeElements, rotateElements, setOriginalElements, setRotationStartPoint } = useRotateAndResizeElements();
   const { translateElements, setTranslationStartPositions } = useTranslateElements();
 
-  const { renderElement } = useRender();
+  const { renderElement} = useRender();
 
   const handleDoubleClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const point = getCoordinates(event);
@@ -448,7 +447,6 @@ const Canvas: React.FC = () => {
     ctx.save();
     ctx.translate(panOffset.x, panOffset.y);
     ctx.scale(scale, scale);
-
     renderElement(ctx, currentElement, (selectedElementIds.length > 1));
 
     ctx.restore();
@@ -493,22 +491,21 @@ const Canvas: React.FC = () => {
           const start = element.startPoint;
           let direction: 'up' | 'down' | 'left' | 'right' = 'right';
 
-          if(currentPoint.x >= start.x){
-            if(currentPoint.y === start.y)
-                direction = 'right';
-            else if(currentPoint.y > start.y)
-                direction = 'down';
+          if (currentPoint.x >= start.x) {
+            if (currentPoint.y === start.y)
+              direction = 'right';
+            else if (currentPoint.y > start.y)
+              direction = 'down';
             else
               direction = 'up';
-          } else{
-            if(currentPoint.y === start.y)
-                direction = 'left';
-            else if(currentPoint.y > start.y)
-                direction = 'down';
+          } else {
+            if (currentPoint.y === start.y)
+              direction = 'left';
+            else if (currentPoint.y > start.y)
+              direction = 'down';
             else
               direction = 'up';
           }
-
           (updated as ArrowElement).direction = direction;
         }
         (updated as ArrowElement | LineElement).endPoint = currentPoint;
@@ -603,8 +600,14 @@ const Canvas: React.FC = () => {
       }
 
       // Always add both arrow and connection atomically
-      setElements(prev => [...prev, newArrow]);
-      setConnections(prev => [...prev, newConnection]);
+      // setElements(prev => [...prev, newArrow]);
+      // setConnections(prev => [...prev, newConnection]);
+
+      flushSync(() => {
+        setElements(prev => [...prev, newArrow]);
+        setConnections(prev => [...prev, newConnection]);
+      });
+
       setCurrentElement(null);
     } else if (isDrawing && currentElement && tool !== 'selection') { //insert other types of new elements to elements array
       setElements(prev => [...prev, currentElement]);

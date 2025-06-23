@@ -1,13 +1,14 @@
 import { useCanvasContext } from '../contexts/CanvasContext/CanvasContext';
 import { getRotatedCorners } from '../utils/geometry';
-import { DrawElement, Point, ResizeDirection } from '../types';
+import { ArrowElement, DrawElement, LineElement, Point, ResizeDirection, Connection } from '../types';
 
 export function useCursorUtils(canvasRef: React.RefObject<HTMLCanvasElement>) {
   const {
     elements,
     selectedElementIds,
     scale,
-    tool
+    tool,
+    connections
   } = useCanvasContext();
 
   const findElementAtPosition = (point: Point): DrawElement | null => {
@@ -25,46 +26,62 @@ export function useCursorUtils(canvasRef: React.RefObject<HTMLCanvasElement>) {
     return null;
   };
 
+  const handleLineOrFreeArrow = (el: ArrowElement | LineElement, point : Point)=>{
+    const handleSize = 8 / scale;
+    const tolerance = handleSize * 1.5;
+
+    // Use angle to rotate the handle positions
+    const angle = el.angle || 0;
+    const cx = el.x + el.width / 2;
+    const cy = el.y + el.height / 2;
+
+    // Calculate rotated start and end points
+    const rotatePoint = (pt: Point) => {
+      const dx = pt.x - cx;
+      const dy = pt.y - cy;
+      return {
+        x: cx + dx * Math.cos(angle) - dy * Math.sin(angle),
+        y: cy + dx * Math.sin(angle) + dy * Math.cos(angle),
+      };
+    };
+
+    const handles = [
+      { pos: rotatePoint(el.startPoint), dir: "start" as ResizeDirection },
+      { pos: rotatePoint(el.endPoint), dir: "end" as ResizeDirection }
+    ];
+
+    for (const { pos, dir } of handles) {
+      const dx = point.x - pos.x;
+      const dy = point.y - pos.y;
+      if (dx * dx + dy * dy <= tolerance * tolerance) {
+        return dir;
+      }
+    }
+    return null;
+  }
+
   const checkResizeHandle = (point: Point): ResizeDirection => {
     if (selectedElementIds.length !== 1) return null;
 
     const el = elements.find(e => e.id === selectedElementIds[0]);
     if (!el) return null;
 
-    // Handle Arrow/Line elements
-    if (el.type === "arrow" || el.type === "line") {
-      const handleSize = 8 / scale;
-      const tolerance = handleSize * 1.5;
-
-      // Use angle to rotate the handle positions
-      const angle = el.angle || 0;
-      const cx = el.x + el.width / 2;
-      const cy = el.y + el.height / 2;
-
-      // Calculate rotated start and end points
-      const rotatePoint = (pt: Point) => {
-        const dx = pt.x - cx;
-        const dy = pt.y - cy;
-        return {
-          x: cx + dx * Math.cos(angle) - dy * Math.sin(angle),
-          y: cy + dx * Math.sin(angle) + dy * Math.cos(angle),
-        };
-      };
-
-      const handles = [
-        { pos: rotatePoint(el.startPoint), dir: "start" as ResizeDirection },
-        { pos: rotatePoint(el.endPoint), dir: "end" as ResizeDirection }
-      ];
-
-      for (const { pos, dir } of handles) {
-        const dx = point.x - pos.x;
-        const dy = point.y - pos.y;
-        if (dx * dx + dy * dy <= tolerance * tolerance) {
-          return dir;
-        }
-      }
-      return null;
+    // Handle Line elements
+    if (el.type === "line") {
+      return handleLineOrFreeArrow(el, point);
     }
+
+    if (el.type === 'arrow') {
+      const { connectionId } = el;
+      const conn = connections.find(c => c.id === connectionId);
+      if (!conn) return null;
+      const { startElementId, endElementId } = conn;
+      if (!startElementId && !endElementId) {
+        return handleLineOrFreeArrow(el, point);
+      }
+
+    }
+
 
     // Default for rectangle/ellipse/etc
     const { x, y, width, height, angle = 0 } = el;

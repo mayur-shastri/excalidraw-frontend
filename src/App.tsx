@@ -5,7 +5,7 @@ Todo:
   2.1.1 : Selection rules for arrow must be different : 
     -allow extending from ends only (usual selectionbox doesnt apply to it)
     -Detaching and reattaching (remove from elements array, add back, etc)
-  2.1.2 : Warping around elements (like eraser.io, instead of straight connections) (Manhattan path)
+  2.1.2 : Warping around elements (like eraser.io, instead of straight connections) (Manhattan path) -->Done
 3. MCP server
 4. Collaboraion Feature
 5. Dark theme?
