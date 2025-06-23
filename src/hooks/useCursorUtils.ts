@@ -1,6 +1,6 @@
 import { useCanvasContext } from '../contexts/CanvasContext/CanvasContext';
-import { getRotatedCorners } from '../utils/geometry';
-import { ArrowElement, DrawElement, LineElement, Point, ResizeDirection, Connection } from '../types';
+import { getConnectedArrowEndPoints, getRotatedCorners } from '../utils/geometry';
+import { ArrowElement, DrawElement, LineElement, Point, ResizeDirection } from '../types';
 
 export function useCursorUtils(canvasRef: React.RefObject<HTMLCanvasElement>) {
   const {
@@ -10,6 +10,9 @@ export function useCursorUtils(canvasRef: React.RefObject<HTMLCanvasElement>) {
     tool,
     connections
   } = useCanvasContext();
+
+  const handleSize = 8 / scale;
+  const tolerance = handleSize * 1.5;
 
   const findElementAtPosition = (point: Point): DrawElement | null => {
     for (let i = elements.length - 1; i >= 0; i--) {
@@ -26,9 +29,7 @@ export function useCursorUtils(canvasRef: React.RefObject<HTMLCanvasElement>) {
     return null;
   };
 
-  const handleLineOrFreeArrow = (el: ArrowElement | LineElement, point : Point)=>{
-    const handleSize = 8 / scale;
-    const tolerance = handleSize * 1.5;
+  const handleLineOrFreeArrow = (el: ArrowElement | LineElement, point: Point) => {
 
     // Use angle to rotate the handle positions
     const angle = el.angle || 0;
@@ -79,17 +80,30 @@ export function useCursorUtils(canvasRef: React.RefObject<HTMLCanvasElement>) {
       if (!startElementId && !endElementId) {
         return handleLineOrFreeArrow(el, point);
       }
-
+      const { startPoint, endPoint } = getConnectedArrowEndPoints(elements, el, startElementId, endElementId);
+      if (startPoint) {
+        // Check if the point is near the start point
+        const dx = point.x - startPoint.x;
+        const dy = point.y - startPoint.y;
+        if (dx * dx + dy * dy <= tolerance * tolerance) {
+          return "start";
+        }
+      }
+      if (endPoint) {
+        // Check if the point is near the end point
+        const dx = point.x - endPoint.x;
+        const dy = point.y - endPoint.y;
+        if (dx * dx + dy * dy <= tolerance * tolerance) {
+          return "end";
+        }
+      }
     }
-
 
     // Default for rectangle/ellipse/etc
     const { x, y, width, height, angle = 0 } = el;
     const cx = x + width / 2;
     const cy = y + height / 2;
 
-    const handleSize = 8 / scale;
-    const tolerance = handleSize * 1.5;
 
     const directions: { dx: number; dy: number; dir: ResizeDirection }[] = [
       { dx: -width / 2, dy: -height / 2, dir: 'nw' },

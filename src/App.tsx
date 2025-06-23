@@ -15,7 +15,7 @@ import { useState, useCallback, useEffect } from 'react';
 import Toolbar from './components/Toolbar';
 import PropertyPanel from './components/PropertyPanel';
 import TextEditor from './components/TextEditor';
-import { DrawElement, ElementType, Point, ElementStyle, ArrowPoint } from './types';
+import { DrawElement, ElementType, Point, ElementStyle, ArrowPoint, Connection } from './types';
 import { useElementOperations } from './hooks/useElementOperations';
 import { CanvasProvider } from './contexts/CanvasContext/CanvasProvider';
 import Canvas from './components/Canvas/Canvas';

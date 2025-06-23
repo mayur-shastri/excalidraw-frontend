@@ -677,6 +677,10 @@ const Canvas: React.FC = () => {
     );
   }, [selectedElementIds]);
 
+  useEffect(()=>{
+    console.log(elements);
+  }, [elements]);
+
   return (
     <canvas
       ref={canvasRef}

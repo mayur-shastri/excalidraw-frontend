@@ -1,4 +1,5 @@
 import { ArrowElement, Connection, DrawElement, LineElement, ResizeHandle } from "../../types";
+import { getConnectedArrowEndPoints } from "../../utils/geometry";
 
 export const drawSelectionOutline = (
     ctx: CanvasRenderingContext2D,
@@ -19,27 +20,11 @@ export const drawSelectionOutline = (
         const { startElementId, endElementId } = conn;
 
 
-        if (startElementId) {
-            const startElement = elements.find(el => el.id === startElementId);
-            if (startElement) {
-                const { x, y, width, height } = startElement;
-                if (arrow.startSide === 'top' || arrow.startSide === 'bottom')
-                    startPoint = { x: x + width / 2, y: y + (arrow.startSide === 'bottom' ? height : 0) };
-                else
-                    startPoint = { x: x + (arrow.startSide === 'right' ? width : 0), y: y + height / 2 };
-            }
-        }
-
-        if (endElementId) {
-            const endElement = elements.find(el => el.id === endElementId);
-            if (endElement) {
-                const { x, y, width, height } = endElement;
-                if (arrow.endSide === 'top' || arrow.endSide === 'bottom')
-                    endPoint = { x: x + width / 2, y: y + (arrow.endSide === 'bottom' ? height : 0) };
-                else
-                    endPoint = { x: x + (arrow.endSide === 'right' ? width : 0), y: y + height / 2 };
-            }
-        }
+        const points = getConnectedArrowEndPoints(elements, element, startElementId, endElementId);
+        if(points.startPoint)
+            startPoint = points.startPoint;
+        if(points.endPoint)
+            endPoint = points.endPoint;
 
         // Calculate center point
         

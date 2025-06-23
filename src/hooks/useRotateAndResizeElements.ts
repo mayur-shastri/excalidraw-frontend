@@ -1,21 +1,9 @@
 import { useState } from "react";
 import { useCanvasContext } from "../contexts/CanvasContext/CanvasContext";
-import { ArrowElement, DrawElement, LineElement, Point, ResizeDirection } from "../types";
+import { ArrowElement, Connection, DrawElement, LineElement, Point, ResizeDirection } from "../types";
 import { getRotatedCorners } from "../utils/geometry";
 
 const ROTATION_THRESHOLD = 0.01;
-
-function getConnectedPoint(el: DrawElement, angle: number): Point {
-    const cx = el.x + el.width / 2;
-    const cy = el.y + el.height / 2;
-    const rx = el.width / 2;
-    const ry = el.height / 2;
-
-    return {
-        x: cx + rx * Math.cos(angle),
-        y: cy + ry * Math.sin(angle),
-    };
-}
 
 export function useRotateAndResizeElements() {
     const {
@@ -23,6 +11,7 @@ export function useRotateAndResizeElements() {
         elements,
         setElements,
         connections,
+        setConnections,
     } = useCanvasContext();
 
     const [originalElements, setOriginalElements] = useState<DrawElement[]>([]);
@@ -105,8 +94,83 @@ export function useRotateAndResizeElements() {
                             return resizeLineOrFreeArrow(element, deltaX, deltaY, direction);
                         }
                         else {
-                            return null;
-                            // to be continued
+                            // DETACH LOGIC
+                            const targetElementId = direction === "start" ? conn.startElementId : conn.endElementId;
+                            if (!targetElementId) {
+                                // If not connected, fallback to normal resize
+                                return resizeLineOrFreeArrow(element, deltaX, deltaY, direction);
+                            }
+                            const targetElement = elements.find(e => e.id === targetElementId);
+                            if (!targetElement) {
+                                return element;
+                            }
+
+                            // Calculate the new point after resize
+                            const original = originalElements.find(el => el.id === element.id) as ArrowElement;
+                            const { startPoint, endPoint } = original;
+                            const origDx = endPoint.x - startPoint.x;
+                            const origDy = endPoint.y - startPoint.y;
+                            const origLength = Math.sqrt(origDx * origDx + origDy * origDy);
+                            const dirX = origDx / (origLength || 1);
+                            const dirY = origDy / (origLength || 1);
+                            const projectedDelta = deltaX * dirX + deltaY * dirY;
+
+                            let newPoint: Point;
+                            if (direction === "end") {
+                                newPoint = {
+                                    x: endPoint.x + projectedDelta * dirX,
+                                    y: endPoint.y + projectedDelta * dirY,
+                                };
+                            } else {
+                                newPoint = {
+                                    x: startPoint.x + projectedDelta * dirX,
+                                    y: startPoint.y + projectedDelta * dirY,
+                                };
+                            }
+
+                            // Check if newPoint is outside the target element's bounding box
+                            const withinX = newPoint.x >= targetElement.x && newPoint.x <= targetElement.x + targetElement.width;
+                            const withinY = newPoint.y >= targetElement.y && newPoint.y <= targetElement.y + targetElement.height;
+                            if (!withinX || !withinY) {
+                                // Remove the connection from the arrow and the element
+                                setConnections((prev: Connection[]): Connection[] => {
+                                    return prev.map(c =>
+                                        c.id === conn.id
+                                            ? {
+                                                ...c,
+                                                [direction === "start" ? "startElementId" : "endElementId"]: null,
+                                            }
+                                            : c
+                                    );
+                                });
+                                console.log("Hi");
+                                setElements(prev =>
+                                    prev.map(e =>
+                                        e.id === targetElementId
+                                            ? {
+                                                ...e,
+                                                connectionIds: (e.connectionIds || []).filter(id => id !== conn.id),
+                                            }
+                                            : e
+                                    )
+                                );
+                                setElements(prev=>
+                                    prev.map(e=>
+                                        e.id === element.id && e.type === 'arrow' ?
+                                        {
+                                            ...e,
+                                            startSide: direction === "start" ? null : e.startSide,
+                                            endSide: direction === "end" ? null : e.endSide,
+                                        }
+                                        : e
+                                    )
+                                );
+                                // Fallback to normal resize
+                                return resizeLineOrFreeArrow(element, deltaX, deltaY, direction);
+                            }
+
+                            // If still inside, keep the connection and don't move the point freely
+                            return element;
                         }
                     }
 
@@ -192,7 +256,7 @@ export function useRotateAndResizeElements() {
                         if (!conn.startElementId && !conn.endElementId) {
                             return rotationHelper(el, centerX, centerY, angleDelta, isSelected);
                         }
-                        else{
+                        else {
                             // to be continued
                             return el;
                         }
@@ -208,11 +272,11 @@ export function useRotateAndResizeElements() {
     };
 
     const rotationHelper = (
-        el: DrawElement, 
-        centerX: number, 
-        centerY: number, 
+        el: DrawElement,
+        centerX: number,
+        centerY: number,
         angleDelta: number,
-        isSelected :  boolean) => {
+        isSelected: boolean) => {
         if (!isSelected) return el;
 
         const cx = el.x + el.width / 2;

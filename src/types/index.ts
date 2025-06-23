@@ -51,8 +51,8 @@ export type ArrowElement = ElementBase & {
   startPoint: Point;
   endPoint: Point;
   connectionId: string;
-  startSide: 'top' | 'bottom' | 'left' | 'right';
-  endSide: 'top' | 'bottom' | 'left' | 'right';
+  startSide: 'top' | 'bottom' | 'left' | 'right' | null;
+  endSide: 'top' | 'bottom' | 'left' | 'right' | null;
   direction : 'up' | 'right' | 'down' | 'left';
 };
 
