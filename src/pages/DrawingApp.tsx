@@ -7,6 +7,7 @@ import TextEditor from "../components/TextEditor";
 import PropertyPanel from "../components/PropertyPanel";
 import Toolbar from "../components/Toolbar";
 import ZoomPanel from "../components/ZoomPanel";
+import { getItemLocalStorage, setItemLocalStorage } from "../utils/localStorage";
 
 function areElementsEqual(a: DrawElement[], b: DrawElement[]) {
     return JSON.stringify(a) === JSON.stringify(b);
@@ -14,7 +15,7 @@ function areElementsEqual(a: DrawElement[], b: DrawElement[]) {
 
 export default function DrawingApp() {
     // State for drawing elements
-    const [elements, setElements] = useState<DrawElement[]>([]);
+    const [elements, setElements] = useState<DrawElement[]>(getItemLocalStorage('elements') || []);
 
     // Undo/Redo stacks
     const [undoStack, setUndoStack] = useState<DrawElement[][]>([]);
@@ -87,6 +88,8 @@ export default function DrawingApp() {
                 });
                 setRedoStack([]);
             }
+            // Save updated elements to local storage
+            setItemLocalStorage('elements', updated);
             return updated;
         });
     }, []);

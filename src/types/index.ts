@@ -155,3 +155,10 @@ export type Connection = {
   endAngle?: number;   // Angle from end element's center
   arrowElementId: string; // Optional reference to visual arrow
 };
+
+export type DropdownButtonProps = {
+    content: string;
+    handleClick: () => void;
+    color: string;
+    icon: 'user' | 'settings' | 'logout' | 'layers' | 'star' | 'clock' | 'share-2' | 'invitations';
+};
