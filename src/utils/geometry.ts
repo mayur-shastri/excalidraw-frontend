@@ -64,4 +64,16 @@ export const getConnectedArrowEndPoints =
 
         return { startPoint, endPoint };
 
-    }
+    };
+
+export const getElementSide = (
+    element : DrawElement,
+    point : Point
+)=>{
+    const { x, y, width, height } = element;
+    if (point.x < x) return 'left';
+    if (point.x > x + width) return 'right';
+    if (point.y < y) return 'top';
+    if (point.y > y + height) return 'bottom';
+    return 'inside';
+};

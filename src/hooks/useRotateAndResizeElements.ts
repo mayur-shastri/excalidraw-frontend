@@ -19,42 +19,20 @@ export function useRotateAndResizeElements() {
 
     const resizeLineOrFreeArrow = (
         element: ArrowElement | LineElement,
-        deltaX: number,
-        deltaY: number,
-        resizeDirection: ResizeDirection
+        resizeDirection: ResizeDirection,
+        current: Point,
     ) => {
         // Use the original startPoint and endPoint from originalElements
         const originalElement = originalElements.find(el => el.id === element.id) as ArrowElement | LineElement | undefined;
         if (!originalElement) return element;
         const { startPoint, endPoint } = originalElement;
 
-        // Calculate the vector from start to end
-        const origDx = endPoint.x - startPoint.x;
-        const origDy = endPoint.y - startPoint.y;
-        const origLength = Math.sqrt(origDx * origDx + origDy * origDy);
-
-        // Direction vector (unit)
-        const dirX = origDx / (origLength || 1);
-        const dirY = origDy / (origLength || 1);
-
-        // Project delta onto the direction of the line
-        const projectedDelta = deltaX * dirX + deltaY * dirY;
-
-        // Only move the selected handle
         if (resizeDirection === "end") {
-            // Move the end point
-            const newEnd = {
-                x: endPoint.x + projectedDelta * dirX,
-                y: endPoint.y + projectedDelta * dirY,
-            };
-            return { ...element, startPoint, endPoint: newEnd };
+            // Move the end point to the current mouse position (relative to the canvas)
+            return { ...element, startPoint, endPoint: { ...current } };
         } else {
-            // Move the start point
-            const newStart = {
-                x: startPoint.x + projectedDelta * dirX,
-                y: startPoint.y + projectedDelta * dirY,
-            };
-            return { ...element, startPoint: newStart, endPoint };
+            // Move the start point to the current mouse position (relative to the canvas)
+            return { ...element, startPoint: { ...current }, endPoint };
         }
     }
 
@@ -82,7 +60,7 @@ export function useRotateAndResizeElements() {
                 }
 
                 if (element.type === 'line') {
-                    return resizeLineOrFreeArrow(element, deltaX, deltaY, direction);
+                    return resizeLineOrFreeArrow(element, direction, current);
                 }
 
                 if (element.type === 'arrow') {
@@ -91,14 +69,14 @@ export function useRotateAndResizeElements() {
                     if (conn) {
                         const { startElementId, endElementId } = conn;
                         if (!startElementId && !endElementId) {
-                            return resizeLineOrFreeArrow(element, deltaX, deltaY, direction);
+                            return resizeLineOrFreeArrow(element, direction, current);
                         }
                         else {
                             // DETACH LOGIC
                             const targetElementId = direction === "start" ? conn.startElementId : conn.endElementId;
                             if (!targetElementId) {
                                 // If not connected, fallback to normal resize
-                                return resizeLineOrFreeArrow(element, deltaX, deltaY, direction);
+                                return resizeLineOrFreeArrow(element, direction, current);
                             }
                             const targetElement = elements.find(e => e.id === targetElementId);
                             if (!targetElement) {
@@ -143,30 +121,28 @@ export function useRotateAndResizeElements() {
                                             : c
                                     );
                                 });
-                                console.log("Hi");
-                                setElements(prev =>
-                                    prev.map(e =>
-                                        e.id === targetElementId
-                                            ? {
+                                setElements(prev => 
+                                    prev.map(e => {
+                                        if (e.id === targetElementId) {
+                                            return {
                                                 ...e,
                                                 connectionIds: (e.connectionIds || []).filter(id => id !== conn.id),
-                                            }
-                                            : e
-                                    )
-                                );
-                                setElements(prev=>
-                                    prev.map(e=>
-                                        e.id === element.id && e.type === 'arrow' ?
-                                        {
-                                            ...e,
-                                            startSide: direction === "start" ? null : e.startSide,
-                                            endSide: direction === "end" ? null : e.endSide,
+                                            };
                                         }
-                                        : e
-                                    )
+                                        if (e.id === element.id && e.type === 'arrow') {
+                                            return {
+                                                ...e,
+                                                startSide: direction === "start" ? null : e.startSide,
+                                                endSide: direction === "end" ? null : e.endSide,
+                                                startPoint : direction === "start" ? current : e.startPoint,
+                                                endPoint : direction === "end" ? current : e.endPoint,
+                                            };
+                                        }
+                                        return e;
+                                    })
                                 );
                                 // Fallback to normal resize
-                                return resizeLineOrFreeArrow(element, deltaX, deltaY, direction);
+                                return resizeLineOrFreeArrow(element, direction, current);
                             }
 
                             // If still inside, keep the connection and don't move the point freely

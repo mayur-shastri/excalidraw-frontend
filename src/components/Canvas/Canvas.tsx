@@ -11,6 +11,7 @@ import { defaultStyle } from '../../constants';
 import { useRender } from '../../hooks/useRender/useRender';
 import { Connection } from '../../types';
 import { flushSync } from 'react-dom';
+import { getElementSide } from '../../utils/geometry';
 
 const Canvas: React.FC = () => {
 
@@ -18,6 +19,7 @@ const Canvas: React.FC = () => {
     elements,
     setElements,
     tool,
+    setActiveTool,
     selectedElementIds,
     setSelectedElementIds,
     scale,
@@ -44,13 +46,14 @@ const Canvas: React.FC = () => {
   const [currentElement, setCurrentElement] = useState<DrawElement | null>(null);
   const [resizeDirection, setResizeDirection] = useState<ResizeDirection>(null);
   const [isRotating, setIsRotating] = useState(false);
+  const [isEditingArrow, setIsEditingArrow] = useState(false);
 
   const { redrawCanvas } = useDrawOnCanvas(canvasRef, isDrawing);
   const { updateCursor, checkResizeHandle, checkRotateHandle, findElementAtPosition } = useCursorUtils(canvasRef);
   const { resizeElements, rotateElements, setOriginalElements, setRotationStartPoint } = useRotateAndResizeElements();
   const { translateElements, setTranslationStartPositions } = useTranslateElements();
 
-  const { renderElement} = useRender();
+  const { renderElement } = useRender();
 
   const handleDoubleClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const point = getCoordinates(event);
@@ -330,7 +333,7 @@ const Canvas: React.FC = () => {
     const deltaX = currentPoint.x - startPoint.x;
     const deltaY = currentPoint.y - startPoint.y;
 
-    if (tool === 'arrow') {
+    if (tool === 'arrow' || isEditingArrow) {
       const elementUnderCursor = findElementAtPosition(currentPoint);
       if (!isDrawing) {
         if (elementUnderCursor) {
@@ -522,7 +525,7 @@ const Canvas: React.FC = () => {
     return updated;
   };
 
-  const handleMouseUp = () => {
+  const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement>) => {
 
     if (isDrawing && tool === 'arrow' && currentElement?.type === 'arrow') {
       const newArrow = { ...currentElement } as ArrowElement;
@@ -599,20 +602,84 @@ const Canvas: React.FC = () => {
         }
       }
 
-      // Always add both arrow and connection atomically
-      // setElements(prev => [...prev, newArrow]);
-      // setConnections(prev => [...prev, newConnection]);
-
       flushSync(() => {
         setElements(prev => [...prev, newArrow]);
         setConnections(prev => [...prev, newConnection]);
       });
 
       setCurrentElement(null);
+    } else if (isEditingArrow) {
+      if (selectedElementIds && selectedElementIds[0]) {
+        const arrow = elements.find(e => e.id === selectedElementIds[0]);
+        if (arrow && arrow.type === 'arrow') {
+          const conn = connections.find(c => c.id === arrow.connectionId);
+          const point = getCoordinates(event);
+          // if (hoveredElement) {
+          //   const side = getElementSide(hoveredElement, point);
+
+          //   // Determine which end is being attached by comparing the current mouse position
+          //   // to the arrow's startPoint and endPoint. Whichever is closer is being attached.
+          //   const distToStart = Math.hypot(
+          //     point.x - arrow.startPoint.x,
+          //     point.y - arrow.startPoint.y
+          //   );
+          //   const distToEnd = Math.hypot(
+          //     point.x - arrow.endPoint.x,
+          //     point.y - arrow.endPoint.y
+          //   );
+          //   const attachingEnd = distToStart < distToEnd ? "start" : "end";
+          //   // attachingEnd will be either "start" or "end"
+          //   // You can use this to update the connection accordingly
+          //   if(attachingEnd === 'start'){
+          //     setArrowStartPoint({
+          //       point,
+          //       elementId : arrow.id
+          //     });
+          //   } else if(attachingEnd === 'end'){
+          //     setArrowEndPoint({
+          //       point,
+          //       elementId : arrow.id
+          //     })
+          //   }
+          //   setConnections(conns=>{
+          //     conns.map(c=>{
+          //       if(conn && c.id === conn.id){
+          //         return {
+          //           ...c,
+          //           startElementId : (attachingEnd === 'start' ?  hoveredElement.id : c.startElementId),
+          //           endElementId : (attachingEnd === 'end' ? hoveredElement.id : c.endElementId)
+          //         }
+          //       }
+          //       else return c;
+          //     })
+          //   });
+
+          //   setElements(els=>{
+          //     els.map(e=>{
+          //       if(e.id === hoveredElement.id && conn){
+          //         return {
+          //           ...e,
+          //           connectionIds : [...e.connectionIds, conn.id]
+          //         }
+          //       }
+          //       else if(e.id === arrow.id && e.type === 'arrow'){
+          //         return {
+          //           ...e,
+          //           startSide : (attachingEnd === 'start') ? side : e.startSide,
+          //           endSide : (attachingEnd === 'end') ? side : e.endSide
+          //         }
+          //       }
+          //     })
+          //   });
+
+          // }
+        }
+      }
     } else if (isDrawing && currentElement && tool !== 'selection') { //insert other types of new elements to elements array
       setElements(prev => [...prev, currentElement]);
     }
 
+    setIsEditingArrow(false);
     setHoveredElement(null);
 
     if (tool === 'eraser' && isDrawing) {
@@ -677,9 +744,16 @@ const Canvas: React.FC = () => {
     );
   }, [selectedElementIds]);
 
-  useEffect(()=>{
-    console.log(elements);
-  }, [elements]);
+  useEffect(() => {
+    if (selectedElementIds.length === 1) {
+      const element = elements.find(el => el.id === selectedElementIds[0]);
+      if (element && element.type === 'arrow') {
+        console.log(element.startPoint, element.endPoint);
+        setIsEditingArrow(true);
+      }
+    }
+  }, [selectedElementIds]);
+
 
   return (
     <canvas

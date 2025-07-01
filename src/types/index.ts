@@ -102,6 +102,7 @@ export interface CanvasProps {
   elements: DrawElement[];
   setElements: React.Dispatch<React.SetStateAction<DrawElement[]>>;
   tool: ElementType;
+  setActiveTool: (tool: ElementType) => void;
   selectedElementIds: string[];
   setSelectedElementIds: React.Dispatch<React.SetStateAction<string[]>>;
   scale: number;

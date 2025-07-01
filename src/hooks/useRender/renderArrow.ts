@@ -166,6 +166,7 @@ function calculateSmartControlPoints(
     startSide: 'top' | 'right' | 'left' | 'bottom' | null,
     endSide: 'top' | 'right' | 'left' | 'bottom' | null,
 ): Point[] {
+    
     const OFFSET = 15;
     const controlPoints: Point[] = [];
 
@@ -176,13 +177,6 @@ function calculateSmartControlPoints(
 
 
     if (!startElement && !endElement) {
-        // if (direction === 'left' || direction === 'right') {
-        //     // add({ x: midX, y: start.y });
-        //     add({ x: midX, y: end.y });
-        // } else if (direction === 'up' || direction === 'down') {
-        //     // add({ x: start.x, y: midY });
-        //     add({ x: end.x, y: midY });
-        // }
         return controlPoints;
     }
     // Always start with an outward OFFSET from start side

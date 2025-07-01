@@ -123,7 +123,7 @@ export function useDrawOnCanvas(canvasRef: React.RefObject<HTMLCanvasElement>, i
       drawResizeHandles(ctx);
     }
 
-    if (hoveredElement && tool === 'arrow') {
+    if (hoveredElement) {
       ctx.save();
       ctx.strokeStyle = '#3b82f6'; // Blue color for highlight
       ctx.lineWidth = 2 / scale; // Scale the line width appropriately

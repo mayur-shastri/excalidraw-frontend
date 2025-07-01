@@ -14,16 +14,47 @@ export function useCursorUtils(canvasRef: React.RefObject<HTMLCanvasElement>) {
   const handleSize = 8 / scale;
   const tolerance = handleSize * 1.5;
 
+  const isPointNearLine = (p1: Point, p2: Point, point: Point, tolerance: number) => {
+    // Check if the point is exactly on the line segment (not just near)
+    // Calculate cross product to check collinearity
+    const cross = (point.y - p1.y) * (p2.x - p1.x) - (point.x - p1.x) * (p2.y - p1.y);
+    if (cross !== 0) return false;
+
+    // Check if the point is within the segment bounds
+    const minX = Math.min(p1.x, p2.x);
+    const maxX = Math.max(p1.x, p2.x);
+    const minY = Math.min(p1.y, p2.y);
+    const maxY = Math.max(p1.y, p2.y);
+
+    return (
+      point.x >= minX &&
+      point.x <= maxX &&
+      point.y >= minY &&
+      point.y <= maxY
+    );
+  };
+
   const findElementAtPosition = (point: Point): DrawElement | null => {
     for (let i = elements.length - 1; i >= 0; i--) {
       const element = elements[i];
-      if (
-        point.x >= element.x &&
-        point.x <= element.x + element.width &&
-        point.y >= element.y &&
-        point.y <= element.y + element.height
-      ) {
-        return element;
+      if (element.type === "arrow" || element.type === "line") {
+        // Use startPoint and endPoint for hit test
+        console.log("Hey");
+        const { startPoint, endPoint } = element;
+        if (
+          isPointNearLine(startPoint, endPoint, point, tolerance * 1.2)
+        ) {
+          return element;
+        }
+      } else {
+        if (
+          point.x >= element.x &&
+          point.x <= element.x + element.width &&
+          point.y >= element.y &&
+          point.y <= element.y + element.height
+        ) {
+          return element;
+        }
       }
     }
     return null;
@@ -146,8 +177,6 @@ export function useCursorUtils(canvasRef: React.RefObject<HTMLCanvasElement>) {
       const angle = el.angle || 0;
       const mx = (el.startPoint.x + el.endPoint.x) / 2;
       const my = (el.startPoint.y + el.endPoint.y) / 2;
-      const cx = el.x + el.width / 2;
-      const cy = el.y + el.height / 2;
       const rotationHandleDistance = 0;
 
       // Offset above the midpoint, then rotate
