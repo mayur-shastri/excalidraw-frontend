@@ -17,6 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import DropdownButton from '../components/Dashboard/DropdownButton';
 // Import your notification item component
 import DropDownNotificationItem from '../components/Dashboard/DropDownNotificationItem';
+import { useAuthContext } from '../contexts/AuthContext/AuthContext';
 
 const Dashboard = () => {
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -24,6 +25,8 @@ const Dashboard = () => {
     const [showFilterDropdown, setShowFilterDropdown] = useState(false);
     const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+
+    const {user, handleSignOut} = useAuthContext();
 
     // Mock notifications
     const notifications = [
@@ -197,14 +200,14 @@ const Dashboard = () => {
                                 </button>
                                 <DropdownMenu show={showUserDropdown} onClose={()=>setShowUserDropdown(false)}>
                                     <div className="px-4 py-2 border-b border-slate-100">
-                                        <p className="font-medium text-slate-800">John Doe</p>
-                                        <p className="text-sm text-slate-500">john@example.com</p>
+                                        <span className="font-medium text-slate-800 block truncate">{(user?.user_metadata.name)}</span>
+                                        <span className="block max-w-xs truncate">{user?.email}</span>
                                     </div>
                                     <DropdownButton content='Edit Profile' handleClick={()=>{}} color='slate' icon='user' />
                                     <DropdownButton content='Settings' handleClick={()=>{}} color='slate' icon='settings' />
                                     <DropdownButton content='Invitations' handleClick={()=>{}} color='slate' icon='invitations' />
                                     <hr className="my-2 border-slate-100" />
-                                    <DropdownButton content='Logout' handleClick={()=>{}} color='red' icon='logout' />
+                                    <DropdownButton content='Logout' handleClick={handleSignOut} color='red' icon='logout' />
                                 </DropdownMenu>
                             </div>
                         </div>

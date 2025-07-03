@@ -16,6 +16,8 @@ import GradientButton from '../components/Buttons/GradientButton';
 import Logo from '../components/Logo/Logo';
 import FeatureCard from '../components/Home/FeatureCard';
 import FooterLinkList from '../components/Home/FooterLinkList';
+import { useEffect, useState } from 'react';
+import { useAuthContext } from '../contexts/AuthContext/AuthContext';
 
 const Home = () => {
     const navigate = useNavigate();
@@ -28,6 +30,15 @@ const Home = () => {
         navigate('/dashboard');
     };
 
+    const [isSignedIn, setIsSignedIn] = useState(false);
+    const { user, handleSignOut } = useAuthContext();
+
+    useEffect(() => {
+        setIsSignedIn(!!user);
+    }, [user]);
+
+    
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50">
             {/* Header */}
@@ -39,12 +50,21 @@ const Home = () => {
 
                         {/* Actions */}
                         <div className="flex items-center space-x-4">
-                            <button
-                                onClick={navigateToAuthPage}
-                                className="text-slate-600 hover:text-indigo-600 transition-colors font-medium"
-                            >
-                                Sign in
-                            </button>
+                            {
+                                !isSignedIn ? (
+                                    <button
+                                        onClick={navigateToAuthPage}
+                                        className="text-slate-600 hover:text-indigo-600 transition-colors font-medium"
+                                    >
+                                        Sign in
+                                    </button>
+                                ) : <button
+                                    onClick={handleSignOut}
+                                    className="text-slate-600 hover:text-indigo-600 transition-colors font-medium"
+                                >
+                                    Sign out
+                                </button>
+                            }
                             <GradientButton onClick={navigateToDashboard}>
                                 Start Drawing
                             </GradientButton>
@@ -81,7 +101,7 @@ const Home = () => {
                         </p>
 
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-                            <OutlineButton icon={ArrowRight}>
+                            <OutlineButton icon={ArrowRight} onClick={navigateToDashboard}>
                                 Try it now
                             </OutlineButton>
                         </div>
@@ -137,7 +157,7 @@ const Home = () => {
                                 <GitMerge className="w-8 h-8 text-white" />
                             </div>
                             <h3 className="text-lg font-semibold text-slate-800 mb-2">Smart Connectors</h3>
-                            <p className="text-slate-600">Automatically align and route connectors between shapes to keep your diagrams clean and readable.</p>
+                            <p className="text-slate-600">Keep your diagrams clean with connectors that automatically route between shapes.</p>
                         </div>
                         <div className="text-center">
                             <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-red-600 rounded-2xl flex items-center justify-center mb-4 mx-auto">
