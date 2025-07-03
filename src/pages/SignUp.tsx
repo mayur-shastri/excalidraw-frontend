@@ -29,7 +29,7 @@ const SignUp = () => {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: "google",
             options: {
-                redirectTo: `${window.location.origin}/dashboard`, // or hardcode to your redirect URL
+                redirectTo: `${window.location.origin}/auth/callback`,
             },
         });
         if (error) console.error("Error signing in:", error);

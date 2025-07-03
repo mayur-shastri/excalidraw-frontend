@@ -6,6 +6,7 @@ import Dashboard from "./pages/Dashboard";
 import PrivateRoute from "./pages/PrivateRoute";
 import { AuthProvider } from "./contexts/AuthContext/AuthProvider";
 import Error from "./pages/Error";
+import AuthCallback from "./pages/AuthCallback";
 
 function App() {
   return (
@@ -22,6 +23,11 @@ function App() {
           <Route path="/draw" element={
             <PrivateRoute>
               <DrawingApp />
+            </PrivateRoute>
+          } />
+          <Route path="/auth/callback" element={
+            <PrivateRoute>
+              <AuthCallback />
             </PrivateRoute>
           } />
           {/* Catch-all route for 404 */}

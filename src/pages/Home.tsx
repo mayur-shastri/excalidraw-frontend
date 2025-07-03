@@ -37,8 +37,6 @@ const Home = () => {
         setIsSignedIn(!!user);
     }, [user]);
 
-    
-
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50">
             {/* Header */}
@@ -101,7 +99,7 @@ const Home = () => {
                         </p>
 
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-                            <OutlineButton icon={ArrowRight} onClick={navigateToDashboard}>
+                            <OutlineButton icon={ArrowRight} onClick={navigateToAuthPage}>
                                 Try it now
                             </OutlineButton>
                         </div>
