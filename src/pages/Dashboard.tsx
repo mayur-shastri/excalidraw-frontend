@@ -18,6 +18,11 @@ import DropdownButton from '../components/Dashboard/DropdownButton';
 // Import your notification item component
 import DropDownNotificationItem from '../components/Dashboard/DropDownNotificationItem';
 import { useAuthContext } from '../contexts/AuthContext/AuthContext';
+import axios from 'axios';
+import { supabase } from '../utils/supabaseClient';
+import { useDiagramContext } from '../contexts/DiagramContext/DiagramContext';
+import { setItemLocalStorage } from '../utils/localStorage';
+import { toast } from 'sonner';
 
 const Dashboard = () => {
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -26,7 +31,8 @@ const Dashboard = () => {
     const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
-    const {user, handleSignOut} = useAuthContext();
+    const { user, handleSignOut } = useAuthContext();
+    const { setCurrentDiagramIdPersistently } = useDiagramContext();
 
     // Mock notifications
     const notifications = [
@@ -123,8 +129,29 @@ const Dashboard = () => {
 
     const navigate = useNavigate();
 
-    const handleNewDrawing = ()=>{
-        navigate('/draw');
+    const handleNewDrawing = async () => {
+        try {
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            if (sessionError || !session) {
+                toast.error(sessionError?.message || 'User not authenticated');
+                return;
+            }
+            const accessToken = session.access_token;
+            axios.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+            const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/diagrams/create`);
+            if (response.status !== 201) {
+                toast.error(response.data.message || 'Failed to create new drawing');
+                return;
+            }
+            setCurrentDiagramIdPersistently((prev)=>{
+                setItemLocalStorage(response.data.id, []);
+                return response.data.id;
+            });
+            toast.success(response.data.message || 'New drawing created successfully');
+            navigate('/draw');
+        } catch (error : any) {
+            toast.error(error.message || 'Error creating new drawing');
+        }
     }
 
     return (
@@ -180,9 +207,9 @@ const Dashboard = () => {
                             </div>
 
                             {/* Create New Drawing */}
-                            <button 
-                            onClick={handleNewDrawing}
-                            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 transition-all transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center">
+                            <button
+                                onClick={handleNewDrawing}
+                                className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 transition-all transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center">
                                 <Plus className="w-4 h-4 mr-2" />
                                 New Drawing
                             </button>
@@ -198,14 +225,14 @@ const Dashboard = () => {
                                     </div>
                                     <ChevronDown className="w-4 h-4" />
                                 </button>
-                                <DropdownMenu show={showUserDropdown} onClose={()=>setShowUserDropdown(false)}>
+                                <DropdownMenu show={showUserDropdown} onClose={() => setShowUserDropdown(false)}>
                                     <div className="px-4 py-2 border-b border-slate-100">
                                         <span className="font-medium text-slate-800 block truncate">{(user?.user_metadata.name)}</span>
                                         <span className="block max-w-xs truncate">{user?.email}</span>
                                     </div>
-                                    <DropdownButton content='Edit Profile' handleClick={()=>{}} color='slate' icon='user' />
-                                    <DropdownButton content='Settings' handleClick={()=>{}} color='slate' icon='settings' />
-                                    <DropdownButton content='Invitations' handleClick={()=>{}} color='slate' icon='invitations' />
+                                    <DropdownButton content='Edit Profile' handleClick={() => { }} color='slate' icon='user' />
+                                    <DropdownButton content='Settings' handleClick={() => { }} color='slate' icon='settings' />
+                                    <DropdownButton content='Invitations' handleClick={() => { }} color='slate' icon='invitations' />
                                     <hr className="my-2 border-slate-100" />
                                     <DropdownButton content='Logout' handleClick={handleSignOut} color='red' icon='logout' />
                                 </DropdownMenu>
@@ -253,11 +280,11 @@ const Dashboard = () => {
                                     <span>Filter</span>
                                     <ChevronDown className="w-4 h-4" />
                                 </button>
-                                <DropdownMenu show={showFilterDropdown} onClose={()=>setShowFilterDropdown(false)}>
-                                    <DropdownButton content="All drawings" handleClick={() => {}} color="slate" icon="layers" />
-                                    <DropdownButton content="Starred" handleClick={() => {}} color="slate" icon="star" />
-                                    <DropdownButton content="Recent" handleClick={() => {}} color="slate" icon="clock" />
-                                    <DropdownButton content="Shared" handleClick={() => {}} color="slate" icon="share-2" />
+                                <DropdownMenu show={showFilterDropdown} onClose={() => setShowFilterDropdown(false)}>
+                                    <DropdownButton content="All drawings" handleClick={() => { }} color="slate" icon="layers" />
+                                    <DropdownButton content="Starred" handleClick={() => { }} color="slate" icon="star" />
+                                    <DropdownButton content="Recent" handleClick={() => { }} color="slate" icon="clock" />
+                                    <DropdownButton content="Shared" handleClick={() => { }} color="slate" icon="share-2" />
                                 </DropdownMenu>
                             </div>
 
@@ -266,8 +293,8 @@ const Dashboard = () => {
                                 <button
                                     onClick={() => setViewMode('grid')}
                                     className={`p-2 rounded-md transition-colors ${viewMode === 'grid'
-                                            ? 'bg-white text-indigo-600 shadow-sm'
-                                            : 'text-slate-600 hover:text-slate-800'
+                                        ? 'bg-white text-indigo-600 shadow-sm'
+                                        : 'text-slate-600 hover:text-slate-800'
                                         }`}
                                 >
                                     <Grid3X3 className="w-4 h-4" />
@@ -275,8 +302,8 @@ const Dashboard = () => {
                                 <button
                                     onClick={() => setViewMode('list')}
                                     className={`p-2 rounded-md transition-colors ${viewMode === 'list'
-                                            ? 'bg-white text-indigo-600 shadow-sm'
-                                            : 'text-slate-600 hover:text-slate-800'
+                                        ? 'bg-white text-indigo-600 shadow-sm'
+                                        : 'text-slate-600 hover:text-slate-800'
                                         }`}
                                 >
                                     <List className="w-4 h-4" />

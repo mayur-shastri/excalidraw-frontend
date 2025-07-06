@@ -3,6 +3,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { supabase } from "../../utils/supabaseClient";
 import { AuthContext } from "./AuthContext";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
@@ -22,8 +23,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const handleSignOut = async () => {
         const { error } = await supabase.auth.signOut();
         if (error) {
-            console.error("Error signing out:", error.message);
+            toast.error("Error signing out");
         }
+        toast.success("Signed out successfully");
         navigate('/');
     };
 

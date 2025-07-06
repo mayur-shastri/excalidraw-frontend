@@ -8,6 +8,8 @@ import PropertyPanel from "../components/PropertyPanel";
 import Toolbar from "../components/Toolbar";
 import ZoomPanel from "../components/ZoomPanel";
 import { getItemLocalStorage, setItemLocalStorage } from "../utils/localStorage";
+import { useDiagramContext } from "../contexts/DiagramContext/DiagramContext";
+import { useNavigate } from "react-router-dom";
 
 function areElementsEqual(a: DrawElement[], b: DrawElement[]) {
     return JSON.stringify(a) === JSON.stringify(b);
@@ -15,7 +17,23 @@ function areElementsEqual(a: DrawElement[], b: DrawElement[]) {
 
 export default function DrawingApp() {
     // State for drawing elements
-    const [elements, setElements] = useState<DrawElement[]>(getItemLocalStorage('elements') || []);
+
+    const {currentDiagramId} = useDiagramContext();
+    const navigate = useNavigate();
+
+    const initializeElements = ()=>{
+        if(!currentDiagramId){
+            // If no diagram ID is set, redirect to dashboard
+            return [];
+        }
+        const storedElements = getItemLocalStorage(currentDiagramId);
+        if (storedElements && Array.isArray(storedElements)) {
+            return storedElements;
+        }
+        return [];
+    }
+
+    const [elements, setElements] = useState<DrawElement[]>(initializeElements);
 
     // Undo/Redo stacks
     const [undoStack, setUndoStack] = useState<DrawElement[][]>([]);
@@ -89,7 +107,12 @@ export default function DrawingApp() {
                 setRedoStack([]);
             }
             // Save updated elements to local storage
-            setItemLocalStorage('elements', updated);
+            if(currentDiagramId){
+                setItemLocalStorage(currentDiagramId, updated);
+            } else{
+                navigate('/dashboard'); // Redirect if no diagram ID
+                return prev; // Return previous state if no ID
+            }
             return updated;
         });
     }, []);

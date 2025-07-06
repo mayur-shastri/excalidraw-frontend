@@ -7,34 +7,39 @@ import PrivateRoute from "./pages/PrivateRoute";
 import { AuthProvider } from "./contexts/AuthContext/AuthProvider";
 import Error from "./pages/Error";
 import AuthCallback from "./pages/AuthCallback";
+import { DiagramProvider } from "./contexts/DiagramContext/DiagramProvider";
+import { Toaster } from "sonner";
 
 function App() {
   return (
     <BrowserRouter>
+      <Toaster position="top-right" richColors />
       <AuthProvider>
-        <Routes>
-          <Route path="/auth" element={<SignUp />} />
-          <Route path="/" element={<Home />} />
-          <Route path="/dashboard" element={
-            <PrivateRoute>
-              <Dashboard />
-            </PrivateRoute>
-          } />
-          <Route path="/draw" element={
-            <PrivateRoute>
-              <DrawingApp />
-            </PrivateRoute>
-          } />
-          <Route path="/auth/callback" element={
-            <PrivateRoute>
-              <AuthCallback />
-            </PrivateRoute>
-          } />
-          {/* Catch-all route for 404 */}
-          <Route path="*" element={<Error errorCode={404} errorMessage="Page not found" />} />
-        </Routes>
+        <DiagramProvider>
+          <Routes>
+            <Route path="/auth" element={<SignUp />} />
+            <Route path="/" element={<Home />} />
+            <Route path="/auth/callback" element={
+              <PrivateRoute>
+                <AuthCallback />
+              </PrivateRoute>
+            } />
+            <Route path="/dashboard" element={
+              <PrivateRoute>
+                <Dashboard />
+              </PrivateRoute>
+            } />
+            <Route path="/draw" element={
+              <PrivateRoute>
+                <DrawingApp />
+              </PrivateRoute>
+            } />
+            {/* Catch-all route for 404 */}
+            <Route path="*" element={<Error errorCode={404} errorMessage="Page not found" />} />
+          </Routes>
+        </DiagramProvider>
       </AuthProvider>
-    </BrowserRouter>
+    </BrowserRouter >
   );
 }
 

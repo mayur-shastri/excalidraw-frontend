@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { toast } from 'sonner';
 
 const AuthCallback = () => {
 
@@ -21,15 +22,12 @@ const AuthCallback = () => {
             axios.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
             const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/users/create`);
 
-            alert(response.status);
-
             if (response.status === 201) {
-                // toast
+                toast.success(response.data.message || "User created successfully");
                 navigate("/dashboard", { replace: true });
             }
             else {
-                // toast
-                alert(`Error creating user, please try again later. ${response.status}`);
+                toast.error(response.data.message || "Failed to create user");
                 navigate("/auth");
             }
 
