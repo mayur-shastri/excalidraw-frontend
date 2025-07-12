@@ -9,6 +9,7 @@ import Error from "./pages/Error";
 import AuthCallback from "./pages/AuthCallback";
 import { DiagramProvider } from "./contexts/DiagramContext/DiagramProvider";
 import { Toaster } from "sonner";
+import Invitations from "./pages/Invitations";
 
 function App() {
   return (
@@ -32,6 +33,11 @@ function App() {
             <Route path="/draw" element={
               <PrivateRoute>
                 <DrawingApp />
+              </PrivateRoute>
+            } />
+            <Route path="/invitations" element={
+              <PrivateRoute>
+                <Invitations />
               </PrivateRoute>
             } />
             {/* Catch-all route for 404 */}

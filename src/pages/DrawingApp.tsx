@@ -10,6 +10,7 @@ import ZoomPanel from "../components/ZoomPanel";
 import { getItemLocalStorage, setItemLocalStorage } from "../utils/localStorage";
 import { useDiagramContext } from "../contexts/DiagramContext/DiagramContext";
 import { useNavigate } from "react-router-dom";
+import InviteButton from "../components/Buttons/InviteButton";
 
 function areElementsEqual(a: DrawElement[], b: DrawElement[]) {
     return JSON.stringify(a) === JSON.stringify(b);
@@ -338,6 +339,8 @@ export default function DrawingApp() {
                     canUndo={undoStack.length > 0}
                     canRedo={redoStack.length > 0}
                 />
+
+                <InviteButton diagramId={currentDiagramId!} />
 
                 {/* Zoom Display */}
                 <ZoomPanel />

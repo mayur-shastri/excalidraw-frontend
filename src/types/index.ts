@@ -162,3 +162,31 @@ export type DropdownButtonProps = {
     color: string;
     icon: 'user' | 'settings' | 'logout' | 'layers' | 'star' | 'clock' | 'share-2' | 'invitations';
 };
+
+export interface Invitation {
+    id: string;
+    type: 'collaboration' | 'team' | 'workspace';
+    inviter: {
+        name: string;
+        email: string;
+        avatar?: string;
+    };
+    diagram : {
+      id: string,
+      title : string
+    }
+    invitedAt: string;
+    expiresAt?: string;
+    status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
+}
+
+export interface InvitationsProps {
+    onGoBack?: () => void;
+}
+
+export type InvitationCount = {
+    countPending: number;
+    countAccepted: number;
+    countRejected: number;
+    countAll: number;
+};
