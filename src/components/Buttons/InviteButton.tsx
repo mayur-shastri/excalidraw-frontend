@@ -45,7 +45,7 @@ const InviteButton: React.FC<{ diagramId: string }> = ({ diagramId }) => {
     };
 
     return (
-        <div className="fixed top-4 right-4 bg-white rounded-lg shadow-md p-1 flex items-center z-40">
+        <div className="fixed top-4 right-4 bg-white rounded-lg shadow-md flex items-center z-40">
             <GradientButton
                 onClick={() => setShowModal(true)}
                 icon={UserPlus}

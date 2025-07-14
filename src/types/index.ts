@@ -100,7 +100,7 @@ export type ResizeHandle = 'top-left' | 'top' | 'top-right' | 'left' | 'right' |
 
 export interface CanvasProps {
   elements: DrawElement[];
-  setElements: React.Dispatch<React.SetStateAction<DrawElement[]>>;
+  setElements: (updater: (prev: DrawElement[]) => DrawElement[]) => void;
   tool: ElementType;
   setActiveTool: (tool: ElementType) => void;
   selectedElementIds: string[];
@@ -117,7 +117,7 @@ export interface CanvasProps {
   arrowEndPoint: ArrowPoint | null;
   setArrowEndPoint: (point: ArrowPoint | null) => void;
   connections: Connection[];
-  setConnections: (conn: Connection[]) => void;
+  setConnections: (updater: (prev: Connection[]) => Connection[]) => void;
   selectionBox: {
     startX: number;
     startY: number;
@@ -190,3 +190,10 @@ export type InvitationCount = {
     countRejected: number;
     countAll: number;
 };
+
+export interface CanvasPreviewProps {
+  elements: DrawElement[];
+  connections: Connection[];
+  scale?: number;
+  panOffset?: { x: number; y: number };
+}
