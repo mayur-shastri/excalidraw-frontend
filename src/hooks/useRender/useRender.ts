@@ -1,6 +1,5 @@
-import { useRef } from "react";
 import { useCanvasContext } from "../../contexts/CanvasContext/CanvasContext";
-import { ArrowElement, DrawElement, FreedrawElement, LineElement, Point, TextElement } from "../../types";
+import { ArrowElement, DrawElement, FreedrawElement, LineElement, TextElement } from "../../types";
 import { renderArrow } from "./renderArrow";
 import { renderDiamond } from "./renderDiamond";
 import { renderEllipse } from "./renderEllipse";
@@ -19,6 +18,8 @@ export const useRender = () => {
         ctx: CanvasRenderingContext2D,
         element: DrawElement,
         multiSelectionFlag: boolean) => {
+        // If element is marked for lazy deletion, dont render it
+        if(element.isDeleted) return;
         const { style, isSelected } = element;
 
         ctx.strokeStyle = style.strokeColor;

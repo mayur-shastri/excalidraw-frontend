@@ -3,19 +3,20 @@ import { Connection, DrawElement, ElementStyle } from '../types';
 
 interface ElementOperationsProps {
   elements: DrawElement[];
-  setElements: (updater: (prev: DrawElement[]) => DrawElement[]) => void;
+  setElementsWithUndo: (updater: (prev: DrawElement[]) => DrawElement[]) => void;
   selectedElementIds: string[];
   setSelectedElementIds: React.Dispatch<React.SetStateAction<string[]>>;
   connections: Connection[];
-  setConnections: (updater: (prev: Connection[]) => Connection[]) => void;
+  setConnectionsWithUndo: (updater: (prev: Connection[]) => Connection[]) => void;
 }
 
 export const useElementOperations = ({
   elements,
-  setElements,
+  // setElements,
+  setElementsWithUndo,
   selectedElementIds,
   setSelectedElementIds,
-  setConnections
+  setConnectionsWithUndo
 }: ElementOperationsProps) => {
 
   // Get selected elements
@@ -25,31 +26,45 @@ export const useElementOperations = ({
   const deleteSelectedElements = useCallback(() => {
     if (selectedElementIds.length === 0) return;
 
-    setElements(prev => prev.filter(el => !selectedElementIds.includes(el.id)));
+    const selectedIdSet = new Set(selectedElementIds);
 
-    setConnections(prev => {
-      const selectedIdSet = new Set(selectedElementIds);
-      return prev.map(conn => {
+    setElementsWithUndo(prev =>
+      prev.map(el => {
+        if (selectedIdSet.has(el.id)) {
+          return { ...el, isDeleted: true, isSelected : false };
+        }
+        return el;
+      })
+    );
+
+    // Handle connections based on deleted elements
+    setConnectionsWithUndo(prev =>
+      prev.map(conn => {
+        const startDeleted = selectedIdSet.has(conn.startElementId || '');
+        const endDeleted = selectedIdSet.has(conn.endElementId || '');
+
+        if (startDeleted && endDeleted) {
+          return { ...conn, isDeleted: true };
+        }
+
         const updatedConn = { ...conn };
-        if (selectedIdSet.has(conn.startElementId || '')) {
-          updatedConn.startElementId = undefined;
-        }
-        if (selectedIdSet.has(conn.endElementId || '')) {
-          updatedConn.endElementId = undefined;
-        }
+        if (startDeleted) updatedConn.startElementId = undefined;
+        if (endDeleted) updatedConn.endElementId = undefined;
+
         return updatedConn;
-      });
-    });
+      })
+    );
 
     setSelectedElementIds([]);
-  }, [selectedElementIds, setElements, setConnections, setSelectedElementIds]);
+  }, [selectedElementIds, setElementsWithUndo, setConnectionsWithUndo, setSelectedElementIds]);
+
 
   // Update style of selected elements
   const updateStyle = useCallback(
     (styleUpdates: Partial<ElementStyle>) => {
       if (selectedElementIds.length === 0) return;
 
-      setElements(prev =>
+      setElementsWithUndo(prev =>
         prev.map(el => {
           if (selectedElementIds.includes(el.id)) {
             return {
@@ -64,7 +79,7 @@ export const useElementOperations = ({
         })
       );
     },
-    [selectedElementIds, setElements]
+    [selectedElementIds, setElementsWithUndo]
   );
 
 

@@ -1,20 +1,24 @@
 import React, { useState } from "react";
 import { UserPlus, X } from "lucide-react";
 import axios from "axios";
-import { supabase } from "../../utils/supabaseClient";
+import { supabase } from "../../../utils/supabaseClient";
 import { toast } from "sonner";
-import GradientButton from "./GradientButton";
+import GradientButton from "../../Buttons/GradientButton";
+import IconButton from "../../Buttons/IconButton";
+import { useDiagramContext } from "../../../contexts/DiagramContext/DiagramContext";
 
 const accessLevels = [
     { value: "VIEW", label: "Viewer" },
     { value: "EDIT", label: "Editor" },
 ];
 
-const InviteButton: React.FC<{ diagramId: string }> = ({ diagramId }) => {
+const InviteButton: React.FC = () => {
     const [showModal, setShowModal] = useState(false);
     const [email, setEmail] = useState("");
     const [access, setAccess] = useState("view");
     const [sending, setSending] = useState(false);
+
+    const {currentDiagramId} = useDiagramContext();
 
     const handleInvite = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -29,7 +33,7 @@ const InviteButton: React.FC<{ diagramId: string }> = ({ diagramId }) => {
             const accessToken = session.access_token;
             axios.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
             await axios.post(`${import.meta.env.VITE_BACKEND_URL}/invitations/invite`, {
-                diagramId,
+                diagramId : currentDiagramId,
                 email,
                 access,
             });
@@ -45,14 +49,15 @@ const InviteButton: React.FC<{ diagramId: string }> = ({ diagramId }) => {
     };
 
     return (
-        <div className="fixed top-4 right-4 bg-white rounded-lg shadow-md flex items-center z-40">
-            <GradientButton
+        <div className="">
+            <IconButton
                 onClick={() => setShowModal(true)}
                 icon={UserPlus}
                 title="Invite collaborators"
+                className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-2 font-medium shadow-lg transition-all transform hover:scale-105 hover:shadow-xl hover:from-indigo-700 hover:to-purple-700 flex items-center justify-center"
             >
-                Invite
-            </GradientButton>
+                <UserPlus className="w-5 h-5" />
+            </IconButton>
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
                     <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-sm relative">

@@ -32,7 +32,6 @@ const Dashboard = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [recentCollaborations, setRecentCollaborations] = useState<any[]>([]);
     const [userDrawings, setUserDrawings] = useState<any[]>([]);
-    const [viewOnlyDrawings, setViewOnlyDrawings] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     const { user, handleSignOut } = useAuthContext();
@@ -77,15 +76,6 @@ const Dashboard = () => {
                 const collabRes = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/diagrams/get-collaborations`);
                 setRecentCollaborations(
                     (collabRes.data || []).map((d: any, i: number) => ({
-                        ...d,
-                        thumbnail: d.thumbnail || STOCK_THUMBNAILS[i % STOCK_THUMBNAILS.length],
-                    }))
-                );
-
-                // View-only diagrams
-                const viewOnlyRes = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/diagrams/get-viewonly-diagrams`);
-                setViewOnlyDrawings(
-                    (viewOnlyRes.data || []).map((d: any, i: number) => ({
                         ...d,
                         thumbnail: d.thumbnail || STOCK_THUMBNAILS[i % STOCK_THUMBNAILS.length],
                     }))

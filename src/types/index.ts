@@ -31,6 +31,9 @@ export type ElementBase = {
   text?: string;
   isMarkedForDeletion?: boolean;
   connectionIds: string[];
+  version: Date;
+  isDeleted: boolean;
+  versionNonce : number;
 };
 
 export type FreedrawElement = ElementBase & {
@@ -154,6 +157,9 @@ export type Connection = {
   startAngle?: number; // Angle from start element's center
   endAngle?: number;   // Angle from end element's center
   arrowElementId: string; // Optional reference to visual arrow
+  version: Date;
+  isDeleted : boolean;
+  versionNonce : number;
 };
 
 export type DropdownButtonProps = {

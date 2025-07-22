@@ -7,6 +7,8 @@ import { Connection, DrawElement } from "../../types";
 import { toast } from "sonner";
 import { supabase } from "../../utils/supabaseClient";
 import CanvasPreview from "./CanvasPreview";
+import { useDiagramContext } from "../../contexts/DiagramContext/DiagramContext";
+import { useNavigate } from "react-router-dom";
 
 // DrawingCard
 const DrawingCard = ({ drawing }: any) => {
@@ -15,6 +17,14 @@ const DrawingCard = ({ drawing }: any) => {
     const [connections, setConnections] = useState<Connection[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [date, setDate] = useState<string>("");
+
+    const {setCurrentDiagramIdPersistently}  = useDiagramContext();
+    const navigate = useNavigate();
+
+    const onClick = async () => {
+        setCurrentDiagramIdPersistently(drawing.id);
+        navigate('/draw');
+    }
 
     const calculateDate = (isoDate: string) => {
         const date = new Date(isoDate);
@@ -58,8 +68,10 @@ const DrawingCard = ({ drawing }: any) => {
         fetchDiagramDetails();
     }, []);
 
+
+
     return (
-        <div className="group bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-slate-200/60 overflow-hidden">
+        <div onClick={onClick} className="group bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-slate-200/60 overflow-hidden">
             <div className="relative aspect-video bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden">
                 {loading ? (
                     <div className="w-full h-full relative">
@@ -80,7 +92,7 @@ const DrawingCard = ({ drawing }: any) => {
                         </svg>
                     </div>
                 ) : (
-                    <CanvasPreview elements={elements} connections={connections}/>
+                    <CanvasPreview elements={elements} connections={connections} />
                 )}
 
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
