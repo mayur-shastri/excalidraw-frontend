@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, Mail, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../utils/supabaseClient';
+import { toast } from 'sonner';
 
 const SignUp = () => {
     const [showPassword, setShowPassword] = useState(false);
@@ -32,7 +33,7 @@ const SignUp = () => {
                 redirectTo: `${window.location.origin}/auth/callback`,
             },
         });
-        if (error) console.error("Error signing in:", error);
+        if (error) toast.error("Error signing in:" + error);
     };
 
     return (

@@ -12,6 +12,7 @@ import { useRender } from '../../hooks/useRender/useRender';
 import { Connection } from '../../types';
 import { flushSync } from 'react-dom';
 import { getElementSide } from '../../utils/geometry';
+import { useWebRTC } from '../../hooks/useWebRTC';
 
 const Canvas: React.FC = () => {
 
@@ -42,16 +43,18 @@ const Canvas: React.FC = () => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
+  const [isRotating, setIsRotating] = useState(false);
   const [startPoint, setStartPoint] = useState<Point>({ x: 0, y: 0 });
   const [currentElement, setCurrentElement] = useState<DrawElement | null>(null);
   const [resizeDirection, setResizeDirection] = useState<ResizeDirection>(null);
-  const [isRotating, setIsRotating] = useState(false);
   const [isEditingArrow, setIsEditingArrow] = useState(false);
 
   const { redrawCanvas } = useDrawOnCanvas(canvasRef, isDrawing);
   const { updateCursor, checkResizeHandle, checkRotateHandle, findElementAtPosition } = useCursorUtils(canvasRef);
   const { resizeElements, rotateElements, setOriginalElements, setRotationStartPoint } = useRotateAndResizeElements();
   const { translateElements, setTranslationStartPositions } = useTranslateElements();
+
+  const { peerStates } = useWebRTC({ currentElement, isDrawing });
 
   const { renderElement } = useRender();
 
@@ -93,6 +96,9 @@ const Canvas: React.FC = () => {
         isSelected: true,
         text: '',
         connectionIds: [],
+        version: Date.now(),
+        versionNonce: Math.random(),
+        isDeleted: false
       };
       onTextEdit(textElement as TextElement);
       return textElement;
@@ -115,6 +121,9 @@ const Canvas: React.FC = () => {
           isSelected: false,
           text: '',
           connectionIds: [],
+          version: Date.now(),
+          versionNonce: Math.random(),
+          isDeleted: false
         };
         break;
       case 'rectangle':
@@ -130,6 +139,9 @@ const Canvas: React.FC = () => {
           isSelected: false,
           text: '',
           connectionIds: [],
+          version: Date.now(),
+          versionNonce: Math.random(),
+          isDeleted: false
         };
         break;
       case 'ellipse':
@@ -145,6 +157,9 @@ const Canvas: React.FC = () => {
           isSelected: false,
           text: '',
           connectionIds: [],
+          version: Date.now(),
+          versionNonce: Math.random(),
+          isDeleted: false
         };
         break;
       case 'arrow':
@@ -163,6 +178,9 @@ const Canvas: React.FC = () => {
           text: '',
           connectionId: "",
           connectionIds: [],
+          version: Date.now(),
+          versionNonce: Math.random(),
+          isDeleted: false
         };
         break;
       case 'line':
@@ -180,6 +198,9 @@ const Canvas: React.FC = () => {
           isSelected: false,
           text: '',
           connectionIds: [],
+          version: Date.now(),
+          versionNonce: Math.random(),
+          isDeleted: false
         };
         break;
       case 'diamond':
@@ -195,6 +216,9 @@ const Canvas: React.FC = () => {
           isSelected: false,
           text: '',
           connectionIds: [],
+          version: Date.now(),
+          versionNonce: Math.random(),
+          isDeleted: false
         };
         break;
       case 'rhombus':
@@ -210,6 +234,9 @@ const Canvas: React.FC = () => {
           isSelected: false,
           text: '',
           connectionIds: [],
+          version: Date.now(),
+          versionNonce: Math.random(),
+          isDeleted: false
         };
         break;
       default:
@@ -540,6 +567,9 @@ const Canvas: React.FC = () => {
         endElementId: undefined,
         startAngle: undefined,
         endAngle: undefined,
+        version: Date.now(),
+        versionNonce: Math.random(),
+        isDeleted: false
       };
 
       // Handle start element if exists
@@ -748,12 +778,10 @@ const Canvas: React.FC = () => {
     if (selectedElementIds.length === 1) {
       const element = elements.find(el => el.id === selectedElementIds[0]);
       if (element && element.type === 'arrow') {
-        console.log(element.startPoint, element.endPoint);
         setIsEditingArrow(true);
       }
     }
   }, [selectedElementIds]);
-
 
   return (
     <canvas

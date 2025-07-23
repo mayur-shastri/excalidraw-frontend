@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../utils/supabaseClient";
 import Loading from "./Loading";
 import { Session } from "@supabase/supabase-js";
+import { toast } from "sonner";
 export default function PrivateRoute({ children }: { children: JSX.Element }) {
 
     const [session, setSession] = useState<Session | null>(null);
@@ -13,7 +14,7 @@ export default function PrivateRoute({ children }: { children: JSX.Element }) {
             const result = await supabase.auth.getSession();
             setLoading(false);
             if (result.error) {
-                console.error("Error fetching session:", result.error.message);
+                toast.error("Error fetching session:" + result.error.message);
             }
             if (result.data.session) {
                 setSession(result.data.session);

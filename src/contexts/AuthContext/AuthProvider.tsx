@@ -21,6 +21,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }, [user]);
 
     const handleSignOut = async () => {
+        localStorage.clear();
         const { error } = await supabase.auth.signOut();
         if (error) {
             toast.error("Error signing out");

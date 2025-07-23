@@ -43,7 +43,6 @@ const Invitations: React.FC = () => {
             const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/invitations/count`);
             setInvitationCounts(res.data.counts);
         } catch (err) {
-            console.error('Failed to fetch invitation counts:', err);
             toast.error('Failed to load invitation counts');
         }
     };
@@ -67,7 +66,6 @@ const Invitations: React.FC = () => {
             const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}${endpoint}`, config);
             setInvitations(res.data.invitations);
         } catch (err) {
-            console.error('Failed to fetch invitations:', err);
             toast.error('Failed to load invitations');
         } finally {
             setLoading(false);
@@ -98,7 +96,6 @@ const Invitations: React.FC = () => {
             fetchInvitations(activeTab);
             fetchInvitationCounts();
         } catch (error) {
-            console.error('Failed to update invitation:', error);
             toast.error('Failed to update invitation');
         }
     };

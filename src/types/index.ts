@@ -33,7 +33,7 @@ export type ElementBase = {
   connectionIds: string[];
   version: Date;
   isDeleted: boolean;
-  versionNonce : number;
+  versionNonce: number;
 };
 
 export type FreedrawElement = ElementBase & {
@@ -56,7 +56,7 @@ export type ArrowElement = ElementBase & {
   connectionId: string;
   startSide: 'top' | 'bottom' | 'left' | 'right' | null;
   endSide: 'top' | 'bottom' | 'left' | 'right' | null;
-  direction : 'up' | 'right' | 'down' | 'left';
+  direction: 'up' | 'right' | 'down' | 'left';
 };
 
 export type LineElement = ElementBase & {
@@ -135,6 +135,10 @@ export interface CanvasProps {
     height: number;
     isActive: boolean;
   } | null>>;
+  peerConnectionsRef : React.RefObject<Record<string, RTCPeerConnection>>;
+  dataChannelsRef: React.RefObject<Record<string, RTCDataChannel>>;
+  peerIdRef : React.RefObject<string | null>;
+  lastMousePos : Point;
 }
 
 export type ResizeDirection = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw' | 'start' | 'end' | null;
@@ -158,43 +162,43 @@ export type Connection = {
   endAngle?: number;   // Angle from end element's center
   arrowElementId: string; // Optional reference to visual arrow
   version: Date;
-  isDeleted : boolean;
-  versionNonce : number;
+  isDeleted: boolean;
+  versionNonce: number;
 };
 
 export type DropdownButtonProps = {
-    content: string;
-    handleClick: () => void;
-    color: string;
-    icon: 'user' | 'settings' | 'logout' | 'layers' | 'star' | 'clock' | 'share-2' | 'invitations';
+  content: string;
+  handleClick: () => void;
+  color: string;
+  icon: 'user' | 'settings' | 'logout' | 'layers' | 'star' | 'clock' | 'share-2' | 'invitations';
 };
 
 export interface Invitation {
-    id: string;
-    type: 'collaboration' | 'team' | 'workspace';
-    inviter: {
-        name: string;
-        email: string;
-        avatar?: string;
-    };
-    diagram : {
-      id: string,
-      title : string
-    }
-    invitedAt: string;
-    expiresAt?: string;
-    status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
+  id: string;
+  type: 'collaboration' | 'team' | 'workspace';
+  inviter: {
+    name: string;
+    email: string;
+    avatar?: string;
+  };
+  diagram: {
+    id: string,
+    title: string
+  }
+  invitedAt: string;
+  expiresAt?: string;
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
 }
 
 export interface InvitationsProps {
-    onGoBack?: () => void;
+  onGoBack?: () => void;
 }
 
 export type InvitationCount = {
-    countPending: number;
-    countAccepted: number;
-    countRejected: number;
-    countAll: number;
+  countPending: number;
+  countAccepted: number;
+  countRejected: number;
+  countAll: number;
 };
 
 export interface CanvasPreviewProps {
@@ -202,4 +206,13 @@ export interface CanvasPreviewProps {
   connections: Connection[];
   scale?: number;
   panOffset?: { x: number; y: number };
+}
+
+export interface PeerState {
+  peerId: string;
+  peerName: string;
+  cursorPosition: Point;
+  currentElement: DrawElement | null;
+  selectedElementIds: string[];
+  isDrawing: boolean;
 }

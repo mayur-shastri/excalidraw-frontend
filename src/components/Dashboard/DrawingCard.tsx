@@ -57,7 +57,6 @@ const DrawingCard = ({ drawing }: any) => {
             setElements(res.data.elements);
             setDate(calculateDate(res.data.updatedAt));
         } catch (error) {
-            console.error("Failed to fetch diagram", error);
             toast.error("Failed to load diagram preview.");
         } finally {
             setLoading(false);

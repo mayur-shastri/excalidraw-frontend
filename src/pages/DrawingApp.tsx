@@ -10,7 +10,7 @@ import ZoomPanel from "../components/ZoomPanel";
 import { getItemLocalStorage, setItemLocalStorage } from "../utils/localStorage";
 import { useDiagramContext } from "../contexts/DiagramContext/DiagramContext";
 import { useNavigate } from "react-router-dom";
-import { useWebRTC } from "../hooks/useWebRTC";
+import { useWebsocketSignaling } from "../hooks/useWebsocketSignaling";
 import ButtonGroup from "../components/DrawingApp/ButtonGroup/ButtonGroup";
 import { supabase } from "../utils/supabaseClient";
 import { toast } from "sonner";
@@ -33,7 +33,7 @@ function DrawingApp() {
     const { currentDiagramId } = useDiagramContext();
     const navigate = useNavigate();
 
-    useWebRTC();
+    const {peerConnectionsRef, peerIdRef, dataChannelsRef} = useWebsocketSignaling();
 
     const [loading, setLoading] = useState<boolean>(true);
 
@@ -192,10 +192,6 @@ function DrawingApp() {
         });
     }, [elements, currentDiagramId, navigate, pushToUndoStack]);
 
-    useEffect(() => {
-        console.log(elements);
-    }, [elements]);
-
     const {
         selectedElements,
         deleteSelectedElements,
@@ -324,11 +320,11 @@ function DrawingApp() {
             axios.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
             const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/diagrams/get/${currentDiagramId}`);
 
-            setElements((prev : DrawElement[]) : DrawElement[]=>{
+            setElements((prev: DrawElement[]): DrawElement[] => {
                 const mergedElements = mergeElements(prev, res.data.elements, currentDiagramId);
                 return mergedElements;
             });
-            setConnections((prev : Connection[]) : Connection[]=>{
+            setConnections((prev: Connection[]): Connection[] => {
                 const mergedConnections = mergeConnections(prev, res.data.connections, currentDiagramId);
                 return mergedConnections;
             });
@@ -355,7 +351,6 @@ function DrawingApp() {
         };
     }, [handleWheel, handleKeyDown, handleKeyUp, handleMouseDown, handleMouseMove, handleMouseUp]);
 
-
     return (
         loading ? <Loading /> :
             <CanvasProvider
@@ -381,6 +376,10 @@ function DrawingApp() {
                     setArrowEndPoint,
                     connections,
                     setConnections: setConnectionsWithUndo,
+                    peerConnectionsRef,
+                    dataChannelsRef,
+                    peerIdRef,
+                    lastMousePos
                 }}
             >
                 <div className="w-screen h-screen overflow-hidden bg-gray-50 relative">

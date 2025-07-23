@@ -35,7 +35,7 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(true);
 
     const { user, handleSignOut } = useAuthContext();
-    const { setCurrentDiagramIdPersistently } = useDiagramContext();
+    const { currentDiagramId, setCurrentDiagramIdPersistently } = useDiagramContext();
     const navigate = useNavigate();
 
     const handleInvitations = () => {
@@ -62,7 +62,7 @@ const Dashboard = () => {
             axios.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
 
             try {
-                
+
                 // User's own diagrams
                 const userRes = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/diagrams/get-diagrams`);
                 setUserDrawings(
@@ -116,9 +116,16 @@ const Dashboard = () => {
         }
     };
 
-    const onGoBack = ()=>{
+    const onGoBack = () => {
         navigate('/');
     }
+
+    useEffect(() => {
+        if (currentDiagramId !== null) {
+            setCurrentDiagramIdPersistently(null);
+        }
+    }, []);
+
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50">

@@ -39,7 +39,6 @@ export function useCursorUtils(canvasRef: React.RefObject<HTMLCanvasElement>) {
       const element = elements[i];
       if (element.type === "arrow" || element.type === "line") {
         // Use startPoint and endPoint for hit test
-        console.log("Hey");
         const { startPoint, endPoint } = element;
         if (
           isPointNearLine(startPoint, endPoint, point, tolerance * 1.2)
