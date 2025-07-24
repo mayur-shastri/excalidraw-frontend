@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Connection, DrawElement, PeerState } from "../types";
 import { useCanvasContext } from "../contexts/CanvasContext/CanvasContext";
 import { mergeElements } from "../webrtc/mergeElements";
@@ -29,6 +29,8 @@ export const useWebRTC = ({ currentElement, isDrawing }: PropType) => {
         peerIdRef,
         lastMousePos,
         selectedElementIds,
+        peerNameRef,
+        peerColorRef
     } = useCanvasContext();
 
     const { currentDiagramId } = useDiagramContext();
@@ -36,11 +38,12 @@ export const useWebRTC = ({ currentElement, isDrawing }: PropType) => {
     const initializeMyState = () => {
         const initState = {
             peerId: peerIdRef.current,
-            peerName: "Meeee", // Replace with actual name
+            peerName: peerNameRef.current, // Replace with actual name
             cursorPosition: lastMousePos,
             currentElement,
             selectedElementIds,
-            isDrawing
+            isDrawing,
+            peerColor: peerColorRef.current,
         } as PeerState;
         return initState;
     };
@@ -132,11 +135,18 @@ export const useWebRTC = ({ currentElement, isDrawing }: PropType) => {
                         case "PEER_SYNC": {
                             const peerState = message.payload.peerState;
                             setPeerStates((prev) => {
-                                const existingPeer = prev.find((p) => p.peerId === peerState.peerId);
-                                if (existingPeer) {
-                                    return prev.map((p) => (p.peerId === peerState.peerId ? peerState : p));
+                                const existingIndex = prev.findIndex(
+                                    (p: PeerState) => p.peerId === peerState.peerId
+                                );
+                                if (existingIndex !== -1) {
+                                    // Update existing peer
+                                    const updatedPeers = [...prev];
+                                    updatedPeers[existingIndex] = peerState;
+                                    return updatedPeers;
+                                } else {
+                                    // Add new peer
+                                    return [...prev, peerState];
                                 }
-                                return [...prev, message.payload];
                             });
                             break;
                         }
@@ -160,6 +170,25 @@ export const useWebRTC = ({ currentElement, isDrawing }: PropType) => {
         applyIncomingStatesToMyState();
     }, [currentDiagramId, dataChannelsRef, elements, setElements, setConnections]);
 
-    return { peerStates };
+    useEffect(() => {
+        if (
+            !peerIdRef.current ||
+            !peerNameRef.current ||
+            !peerColorRef.current
+        ) return; // Don't set state if essential fields are missing
+
+        setMyState({
+            peerId: peerIdRef.current,
+            peerName: peerNameRef.current,
+            cursorPosition: lastMousePos,
+            currentElement,
+            selectedElementIds,
+            isDrawing,
+            peerColor: peerColorRef.current,
+        });
+    }, [lastMousePos, currentElement, selectedElementIds, isDrawing]);
+
+
+    return { peerStates, setMyState };
 
 };

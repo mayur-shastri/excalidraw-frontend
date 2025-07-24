@@ -4,6 +4,7 @@ import { createPeerConnection } from '../webrtc/peerConnection';
 import { getSocket, disconnectSocket } from '../webrtc/socket';
 import { useDiagramContext } from '../contexts/DiagramContext/DiagramContext';
 import { toast } from 'sonner';
+import { supabase } from '../utils/supabaseClient';
 
 export const useWebsocketSignaling = () => {
 
@@ -13,70 +14,89 @@ export const useWebsocketSignaling = () => {
     const peerConnectionsRef = useRef<Record<string, RTCPeerConnection>>({});
     const peerIdRef = useRef<string | null>(null);
     const dataChannelsRef = useRef<Record<string, RTCDataChannel>>({});
+    const peerColorRef = useRef<string>("");
+    const peerNameRef = useRef<string>("");
 
     useEffect(() => {
 
-        const socket = getSocket();
+        const run = async () => {
+            const socket = getSocket();
 
-        if (!currentDiagramId || !socket) return;
+            if (!currentDiagramId || !socket) return;
 
-        socketRef.current = socket;
+            socketRef.current = socket;
 
-        socket.emit('join', { diagramId: currentDiagramId });
-
-        socket.on('joined', async ({ peerId, peers }) => {
-            peerIdRef.current = peerId;
-
-            // Start peer connection with each existing peer
-            for (const remotePeerId of peers) {
-                await createOffer(remotePeerId);
-            }
-        });
-
-        socket.on('new-peer', async ({ peerId: newPeerId }) => {
-            getOrCreateConnection(newPeerId);
-        });
-
-        socket.on('signal', async ({ from, signalType, data }) => {
-            const conn = getOrCreateConnection(from);
-
-            if (signalType === 'offer') {
-                await conn.setRemoteDescription(new RTCSessionDescription(data));
-                const answer = await conn.createAnswer();
-                await conn.setLocalDescription(answer);
-
-                socket.emit('signal', {
-                    to: from,
-                    from: peerIdRef.current,
-                    signalType: 'answer',
-                    data: answer,
-                });
-            }
-
-            if (signalType === 'answer') {
-
-                if (conn.signalingState !== 'have-local-offer') {
-                    console.warn(`Unexpected signaling state (${conn.signalingState}) when receiving answer from ${peerIdRef}. Skipping setRemoteDescription.`);
+            const getSupabaseToken = async () => {
+                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+                if (sessionError || !session) {
+                    toast.error("You are not logged in!");
                     return;
                 }
-
-                await conn.setRemoteDescription(new RTCSessionDescription(data));
+                return session.access_token;
             }
 
-            if (signalType === 'ice-candidate') {
-                try {
-                    await conn.addIceCandidate(new RTCIceCandidate(data));
-                } catch (err) {
-                    toast.error('Failed to add ICE candidate:' + err);
+            const token = await getSupabaseToken();
+
+            socket.emit('join', { diagramId: currentDiagramId, token });
+
+            socket.on('joined', async ({ peerId, peers, peerName, peerColor }) => {
+                peerIdRef.current = peerId;
+                peerNameRef.current = peerName;
+                peerColorRef.current = peerColor;
+
+                // Start peer connection with each existing peer
+                for (const remotePeerId of peers) {
+                    await createOffer(remotePeerId);
                 }
-            }
-        });
+            });
 
-        socket.on('peer-left', ({ peerId }) => {
-            peerConnectionsRef.current[peerId]?.close();
-            delete peerConnectionsRef.current[peerId];
-            delete dataChannelsRef.current[peerId];
-        });
+            socket.on('new-peer', async ({ peerId: newPeerId }) => {
+                getOrCreateConnection(newPeerId);
+            });
+
+            socket.on('signal', async ({ from, signalType, data }) => {
+                const conn = getOrCreateConnection(from);
+
+                if (signalType === 'offer') {
+                    await conn.setRemoteDescription(new RTCSessionDescription(data));
+                    const answer = await conn.createAnswer();
+                    await conn.setLocalDescription(answer);
+
+                    socket.emit('signal', {
+                        to: from,
+                        from: peerIdRef.current,
+                        signalType: 'answer',
+                        data: answer,
+                    });
+                }
+
+                if (signalType === 'answer') {
+
+                    if (conn.signalingState !== 'have-local-offer') {
+                        console.warn(`Unexpected signaling state (${conn.signalingState}) when receiving answer from ${peerIdRef}. Skipping setRemoteDescription.`);
+                        return;
+                    }
+
+                    await conn.setRemoteDescription(new RTCSessionDescription(data));
+                }
+
+                if (signalType === 'ice-candidate') {
+                    try {
+                        await conn.addIceCandidate(new RTCIceCandidate(data));
+                    } catch (err) {
+                        toast.error('Failed to add ICE candidate:' + err);
+                    }
+                }
+            });
+
+            socket.on('peer-left', ({ peerId }) => {
+                peerConnectionsRef.current[peerId]?.close();
+                delete peerConnectionsRef.current[peerId];
+                delete dataChannelsRef.current[peerId];
+            });
+        }
+
+        run();
 
         return () => {
             disconnectSocket();
@@ -139,6 +159,6 @@ export const useWebsocketSignaling = () => {
         });
     };
 
-    return { peerConnectionsRef, peerIdRef, dataChannelsRef };
+    return { peerConnectionsRef, peerIdRef, dataChannelsRef, peerColorRef, peerNameRef };
 
 };

@@ -139,6 +139,8 @@ export interface CanvasProps {
   dataChannelsRef: React.RefObject<Record<string, RTCDataChannel>>;
   peerIdRef : React.RefObject<string | null>;
   lastMousePos : Point;
+  peerNameRef : React.RefObject<string | null>;
+  peerColorRef : React.RefObject<string | null>;
 }
 
 export type ResizeDirection = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw' | 'start' | 'end' | null;
@@ -211,6 +213,7 @@ export interface CanvasPreviewProps {
 export interface PeerState {
   peerId: string;
   peerName: string;
+  peerColor : string;
   cursorPosition: Point;
   currentElement: DrawElement | null;
   selectedElementIds: string[];

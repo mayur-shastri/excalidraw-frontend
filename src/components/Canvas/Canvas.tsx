@@ -13,6 +13,9 @@ import { Connection } from '../../types';
 import { flushSync } from 'react-dom';
 import { getElementSide } from '../../utils/geometry';
 import { useWebRTC } from '../../hooks/useWebRTC';
+import { renderPeerStates } from '../../hooks/useRender/renderPeerStates';
+import PeerCursor from '../DrawingApp/PeerCursor/PeerCursor';
+import { drawCurrentElement } from '../../utils/drawCurrentElement';
 
 const Canvas: React.FC = () => {
 
@@ -54,7 +57,7 @@ const Canvas: React.FC = () => {
   const { resizeElements, rotateElements, setOriginalElements, setRotationStartPoint } = useRotateAndResizeElements();
   const { translateElements, setTranslationStartPositions } = useTranslateElements();
 
-  const { peerStates } = useWebRTC({ currentElement, isDrawing });
+  const { peerStates, setMyState } = useWebRTC({ currentElement, isDrawing });
 
   const { renderElement } = useRender();
 
@@ -357,6 +360,11 @@ const Canvas: React.FC = () => {
 
   const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const currentPoint = getCoordinates(event);
+
+    setMyState((prev)=>{
+      return {...prev, cursorPosition : currentPoint};
+    });
+
     const deltaX = currentPoint.x - startPoint.x;
     const deltaY = currentPoint.y - startPoint.y;
 
@@ -463,23 +471,7 @@ const Canvas: React.FC = () => {
     }
 
     redrawCanvas();
-    drawCurrentElement(currentElement);
-  };
-
-  const drawCurrentElement = (currentElement: DrawElement | null) => {
-    if (!currentElement) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.save();
-    ctx.translate(panOffset.x, panOffset.y);
-    ctx.scale(scale, scale);
-    renderElement(ctx, currentElement, (selectedElementIds.length > 1));
-
-    ctx.restore();
+    drawCurrentElement(currentElement, canvasRef, panOffset, scale, selectedElementIds);
   };
 
   const updateElement = (element: DrawElement, currentPoint: Point, startPoint: Point): DrawElement => {
@@ -759,9 +751,23 @@ const Canvas: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    function peerStateRenderer() {
+
+      const canvas = canvasRef.current;
+      const ctx = canvas?.getContext('2d');
+      if (!ctx) return;
+      renderPeerStates(peerStates, ctx);
+
+      requestAnimationFrame(peerStateRenderer);
+    }
+
+    requestAnimationFrame(peerStateRenderer);
+  }, [peerStates]);
+
+  useEffect(() => {
     redrawCanvas();
     if (arrowStartPoint && arrowEndPoint) {
-      drawCurrentElement(currentElement);
+      drawCurrentElement(currentElement, canvasRef, panOffset, scale, selectedElementIds);
     }
   }, [elements, scale, panOffset, selectionBox, hoveredElement, arrowStartPoint, arrowEndPoint, tool]);
 
@@ -783,16 +789,35 @@ const Canvas: React.FC = () => {
     }
   }, [selectedElementIds]);
 
+
   return (
-    <canvas
-      ref={canvasRef}
-      className="w-full h-full touch-none"
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-      onDoubleClick={handleDoubleClick}
-    />
+    <>
+
+      <canvas
+        ref={canvasRef}
+        className="w-full h-full touch-none"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onDoubleClick={handleDoubleClick}
+      />
+
+      {
+        peerStates.map((peer) => {
+          return (
+            <PeerCursor
+              key={peer.peerId}
+              position={peer.cursorPosition}
+              name={peer.peerName}
+              color={peer.peerColor}
+            />
+          );
+        })
+      }
+
+    </>
+
   );
 };
 

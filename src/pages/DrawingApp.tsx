@@ -33,7 +33,7 @@ function DrawingApp() {
     const { currentDiagramId } = useDiagramContext();
     const navigate = useNavigate();
 
-    const {peerConnectionsRef, peerIdRef, dataChannelsRef} = useWebsocketSignaling();
+    const {peerConnectionsRef, peerIdRef, dataChannelsRef, peerColorRef, peerNameRef} = useWebsocketSignaling();
 
     const [loading, setLoading] = useState<boolean>(true);
 
@@ -379,7 +379,9 @@ function DrawingApp() {
                     peerConnectionsRef,
                     dataChannelsRef,
                     peerIdRef,
-                    lastMousePos
+                    lastMousePos,
+                    peerColorRef,
+                    peerNameRef
                 }}
             >
                 <div className="w-screen h-screen overflow-hidden bg-gray-50 relative">
