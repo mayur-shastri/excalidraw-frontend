@@ -113,7 +113,7 @@ function DrawingApp() {
 
                 return {
                     ...el,
-                    version: Date.now(), // or prevEl.version + 1
+                    version: Date.now(),
                     versionNonce: Math.random(),
                     isDeleted: el.isDeleted ?? false,
                 };

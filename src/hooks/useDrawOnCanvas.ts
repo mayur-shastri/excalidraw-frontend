@@ -4,7 +4,7 @@ import { DrawElement } from '../types';
 import { defaultStyle } from '../constants';
 import { useRender } from './useRender/useRender';
 
-export function useDrawOnCanvas(canvasRef: React.RefObject<HTMLCanvasElement>, isDrawing: boolean) {
+export function useDrawOnCanvas(canvasRef: React.RefObject<HTMLCanvasElement>, isDrawing: boolean, currentElement : DrawElement | null) {
   const {
     elements,
     selectedElementIds,
@@ -43,7 +43,7 @@ export function useDrawOnCanvas(canvasRef: React.RefObject<HTMLCanvasElement>, i
   };
 
   const drawResizeHandles = (ctx: CanvasRenderingContext2D) => {
-    const selectedElements = elements.filter(el => selectedElementIds.includes(el.id));
+    const selectedElements = elements.filter(el => selectedElementIds.includes(el.id) && !el.isDeleted);
     if (selectedElements.length === 0) return;
 
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -94,6 +94,8 @@ export function useDrawOnCanvas(canvasRef: React.RefObject<HTMLCanvasElement>, i
 
     elements.forEach(element => {
       if (element.isMarkedForDeletion) return;
+      if(element.isDeleted) return;
+      if(element.id === currentElement?.id) return;
       renderElement(ctx, element, (selectedElementIds.length > 1));
     });
 

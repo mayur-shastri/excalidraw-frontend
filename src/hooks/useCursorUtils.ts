@@ -95,7 +95,7 @@ export function useCursorUtils(canvasRef: React.RefObject<HTMLCanvasElement>) {
     if (selectedElementIds.length !== 1) return null;
 
     const el = elements.find(e => e.id === selectedElementIds[0]);
-    if (!el) return null;
+    if (!el || el.isDeleted) return null;
 
     // Handle Line elements
     if (el.type === "line") {
@@ -167,7 +167,8 @@ export function useCursorUtils(canvasRef: React.RefObject<HTMLCanvasElement>) {
   const checkRotateHandle = (point: Point) => {
     if (selectedElementIds.length === 0) return false;
 
-    const selectedElements = elements.filter(el => selectedElementIds.includes(el.id));
+    const selectedElements = elements.filter(el => selectedElementIds.includes(el.id) && !el.isDeleted);
+
     if (selectedElements.length === 0) return false;
 
     // Special case for single arrow/line: rotation handle at midpoint
@@ -267,7 +268,8 @@ export function useCursorUtils(canvasRef: React.RefObject<HTMLCanvasElement>) {
     } else if (
       selectedElementIds.length > 0 &&
       findElementAtPosition(point)?.id &&
-      selectedElementIds.includes(findElementAtPosition(point)!.id)
+      selectedElementIds.includes(findElementAtPosition(point)!.id) &&
+      !findElementAtPosition(point)!.isDeleted
     ) {
       canvas.style.cursor = 'move';
     } else {

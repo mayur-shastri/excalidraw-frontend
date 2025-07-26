@@ -66,7 +66,7 @@ export const useElementOperations = ({
 
       setElementsWithUndo(prev =>
         prev.map(el => {
-          if (selectedElementIds.includes(el.id)) {
+          if (selectedElementIds.includes(el.id) && !el.isDeleted) {
             return {
               ...el,
               style: {

@@ -218,4 +218,5 @@ export interface PeerState {
   currentElement: DrawElement | null;
   selectedElementIds: string[];
   isDrawing: boolean;
+  version : Date;
 }

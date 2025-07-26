@@ -17,6 +17,7 @@ export function useTranslateElements() {
   const translateElements = (deltaX: number, deltaY: number) => {
     setElements(prevElements => {
       return prevElements.map(element => {
+        if(element.isDeleted) return element;
         const isSelected = selectedElementIds.includes(element.id);
 
         // Case 1: Selected element (move normally)

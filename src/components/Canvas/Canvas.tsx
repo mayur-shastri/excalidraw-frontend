@@ -8,10 +8,8 @@ import { TranslatingStartState } from '../../types';
 import { useTranslateElements } from '../../hooks/useTranslateElements';
 import { useCanvasContext } from '../../contexts/CanvasContext/CanvasContext';
 import { defaultStyle } from '../../constants';
-import { useRender } from '../../hooks/useRender/useRender';
 import { Connection } from '../../types';
 import { flushSync } from 'react-dom';
-import { getElementSide } from '../../utils/geometry';
 import { useWebRTC } from '../../hooks/useWebRTC';
 import { renderPeerStates } from '../../hooks/useRender/renderPeerStates';
 import PeerCursor from '../DrawingApp/PeerCursor/PeerCursor';
@@ -52,20 +50,18 @@ const Canvas: React.FC = () => {
   const [resizeDirection, setResizeDirection] = useState<ResizeDirection>(null);
   const [isEditingArrow, setIsEditingArrow] = useState(false);
 
-  const { redrawCanvas } = useDrawOnCanvas(canvasRef, isDrawing);
+  const { redrawCanvas } = useDrawOnCanvas(canvasRef, isDrawing, currentElement);
   const { updateCursor, checkResizeHandle, checkRotateHandle, findElementAtPosition } = useCursorUtils(canvasRef);
   const { resizeElements, rotateElements, setOriginalElements, setRotationStartPoint } = useRotateAndResizeElements();
   const { translateElements, setTranslationStartPositions } = useTranslateElements();
 
-  const { peerStates, setMyState } = useWebRTC({ currentElement, isDrawing });
-
-  const { renderElement } = useRender();
+  const { peerStates, setMyState, peerIdRef } = useWebRTC({ currentElement, isDrawing });
 
   const handleDoubleClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const point = getCoordinates(event);
     const clickedElement = findElementAtPosition(point);
 
-    if (clickedElement) {
+    if (clickedElement && !clickedElement.isDeleted) {
       setSelectedElementIds([clickedElement.id]);
       onTextEdit(clickedElement as TextElement);
     }
@@ -99,7 +95,7 @@ const Canvas: React.FC = () => {
         isSelected: true,
         text: '',
         connectionIds: [],
-        version: Date.now(),
+        version: new Date(),
         versionNonce: Math.random(),
         isDeleted: false
       };
@@ -124,7 +120,7 @@ const Canvas: React.FC = () => {
           isSelected: false,
           text: '',
           connectionIds: [],
-          version: Date.now(),
+          version: new Date(),
           versionNonce: Math.random(),
           isDeleted: false
         };
@@ -142,7 +138,7 @@ const Canvas: React.FC = () => {
           isSelected: false,
           text: '',
           connectionIds: [],
-          version: Date.now(),
+          version: new Date(),
           versionNonce: Math.random(),
           isDeleted: false
         };
@@ -160,7 +156,7 @@ const Canvas: React.FC = () => {
           isSelected: false,
           text: '',
           connectionIds: [],
-          version: Date.now(),
+          version: new Date(),
           versionNonce: Math.random(),
           isDeleted: false
         };
@@ -181,7 +177,7 @@ const Canvas: React.FC = () => {
           text: '',
           connectionId: "",
           connectionIds: [],
-          version: Date.now(),
+          version: new Date(),
           versionNonce: Math.random(),
           isDeleted: false
         };
@@ -201,7 +197,7 @@ const Canvas: React.FC = () => {
           isSelected: false,
           text: '',
           connectionIds: [],
-          version: Date.now(),
+          version: new Date(),
           versionNonce: Math.random(),
           isDeleted: false
         };
@@ -219,7 +215,7 @@ const Canvas: React.FC = () => {
           isSelected: false,
           text: '',
           connectionIds: [],
-          version: Date.now(),
+          version: new Date(),
           versionNonce: Math.random(),
           isDeleted: false
         };
@@ -237,7 +233,7 @@ const Canvas: React.FC = () => {
           isSelected: false,
           text: '',
           connectionIds: [],
-          version: Date.now(),
+          version: new Date(),
           versionNonce: Math.random(),
           isDeleted: false
         };
@@ -260,6 +256,7 @@ const Canvas: React.FC = () => {
 
     return elements
       .filter(element => (
+        !element.isDeleted &&
         element.x < selectionBox.startX + selectionBox.width &&
         element.x + element.width > selectionBox.startX &&
         element.y < selectionBox.startY + selectionBox.height &&
@@ -301,7 +298,7 @@ const Canvas: React.FC = () => {
     if (selectedElementIds.length > 0 && clickedElement && selectedElementIds.includes(clickedElement.id)) {
       setIsTranslating(true);
 
-      if (clickedElement) {
+      if (clickedElement && !clickedElement.isDeleted) {
         if (event.shiftKey) {
           setSelectedElementIds(prev =>
             prev.includes(clickedElement.id)
@@ -330,7 +327,7 @@ const Canvas: React.FC = () => {
     setIsDrawing(true);
 
     if (tool === 'selection') {
-      if (clickedElement) {
+      if (clickedElement && !clickedElement.isDeleted) {
         if (event.shiftKey) {
           setSelectedElementIds(prev =>
             prev.includes(clickedElement.id)
@@ -361,8 +358,8 @@ const Canvas: React.FC = () => {
   const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const currentPoint = getCoordinates(event);
 
-    setMyState((prev)=>{
-      return {...prev, cursorPosition : currentPoint};
+    setMyState((prev) => {
+      return { ...prev, cursorPosition: currentPoint };
     });
 
     const deltaX = currentPoint.x - startPoint.x;
@@ -636,65 +633,6 @@ const Canvas: React.FC = () => {
         if (arrow && arrow.type === 'arrow') {
           const conn = connections.find(c => c.id === arrow.connectionId);
           const point = getCoordinates(event);
-          // if (hoveredElement) {
-          //   const side = getElementSide(hoveredElement, point);
-
-          //   // Determine which end is being attached by comparing the current mouse position
-          //   // to the arrow's startPoint and endPoint. Whichever is closer is being attached.
-          //   const distToStart = Math.hypot(
-          //     point.x - arrow.startPoint.x,
-          //     point.y - arrow.startPoint.y
-          //   );
-          //   const distToEnd = Math.hypot(
-          //     point.x - arrow.endPoint.x,
-          //     point.y - arrow.endPoint.y
-          //   );
-          //   const attachingEnd = distToStart < distToEnd ? "start" : "end";
-          //   // attachingEnd will be either "start" or "end"
-          //   // You can use this to update the connection accordingly
-          //   if(attachingEnd === 'start'){
-          //     setArrowStartPoint({
-          //       point,
-          //       elementId : arrow.id
-          //     });
-          //   } else if(attachingEnd === 'end'){
-          //     setArrowEndPoint({
-          //       point,
-          //       elementId : arrow.id
-          //     })
-          //   }
-          //   setConnections(conns=>{
-          //     conns.map(c=>{
-          //       if(conn && c.id === conn.id){
-          //         return {
-          //           ...c,
-          //           startElementId : (attachingEnd === 'start' ?  hoveredElement.id : c.startElementId),
-          //           endElementId : (attachingEnd === 'end' ? hoveredElement.id : c.endElementId)
-          //         }
-          //       }
-          //       else return c;
-          //     })
-          //   });
-
-          //   setElements(els=>{
-          //     els.map(e=>{
-          //       if(e.id === hoveredElement.id && conn){
-          //         return {
-          //           ...e,
-          //           connectionIds : [...e.connectionIds, conn.id]
-          //         }
-          //       }
-          //       else if(e.id === arrow.id && e.type === 'arrow'){
-          //         return {
-          //           ...e,
-          //           startSide : (attachingEnd === 'start') ? side : e.startSide,
-          //           endSide : (attachingEnd === 'end') ? side : e.endSide
-          //         }
-          //       }
-          //     })
-          //   });
-
-          // }
         }
       }
     } else if (isDrawing && currentElement && tool !== 'selection') { //insert other types of new elements to elements array
@@ -756,12 +694,11 @@ const Canvas: React.FC = () => {
       const canvas = canvasRef.current;
       const ctx = canvas?.getContext('2d');
       if (!ctx) return;
-      renderPeerStates(peerStates, ctx);
-
-      requestAnimationFrame(peerStateRenderer);
+      renderPeerStates(peerStates, canvasRef, panOffset, scale, peerIdRef);
     }
 
-    requestAnimationFrame(peerStateRenderer);
+    peerStateRenderer();
+
   }, [peerStates]);
 
   useEffect(() => {
@@ -789,6 +726,9 @@ const Canvas: React.FC = () => {
     }
   }, [selectedElementIds]);
 
+  // useEffect(()=>{
+  //   console.log(elements);
+  // }, [elements]);
 
   return (
     <>

@@ -44,6 +44,7 @@ export function useRotateAndResizeElements() {
 
         setElements(prevElements => {
             return prevElements.map(element => {
+                if(element.isDeleted) return element;
                 const isSelected = selectedElementIds.includes(element.id);
 
                 if (!isSelected) return element;
@@ -200,7 +201,7 @@ export function useRotateAndResizeElements() {
     const rotateElements = (currentPoint: Point) => {
         if (selectedElementIds.length === 0 || !rotationStartPoint) return;
 
-        const selectedElements = elements.filter(el => selectedElementIds.includes(el.id));
+        const selectedElements = elements.filter(el => selectedElementIds.includes(el.id) && !el.isDeleted);
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
         selectedElements.forEach(el => {
@@ -223,6 +224,7 @@ export function useRotateAndResizeElements() {
         if (Math.abs(angleDelta) > ROTATION_THRESHOLD) {
             setElements(prevElements => {
                 return prevElements.map(el => {
+                    if(el.isDeleted) return el;
                     const isSelected = selectedElementIds.includes(el.id);
 
                     // Arrows update based on connected element rotation

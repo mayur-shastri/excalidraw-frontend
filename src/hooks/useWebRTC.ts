@@ -1,17 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Connection, DrawElement, PeerState } from "../types";
 import { useCanvasContext } from "../contexts/CanvasContext/CanvasContext";
 import { mergeElements } from "../webrtc/mergeElements";
 import { useDiagramContext } from "../contexts/DiagramContext/DiagramContext";
 import { mergeConnections } from "../webrtc/mergeConnections";
-
-// TODO :
-/*
-1. A cursor component (with the name and everything)
-2. A render function for peer's currentElement, and for incoming states : {elements and connections}
-    -use the mergeElements and mergeConnections functions defined previously
-3. 
-*/
 
 type PropType = {
     currentElement: DrawElement | null;
@@ -30,7 +22,7 @@ export const useWebRTC = ({ currentElement, isDrawing }: PropType) => {
         lastMousePos,
         selectedElementIds,
         peerNameRef,
-        peerColorRef
+        peerColorRef,
     } = useCanvasContext();
 
     const { currentDiagramId } = useDiagramContext();
@@ -44,12 +36,19 @@ export const useWebRTC = ({ currentElement, isDrawing }: PropType) => {
             selectedElementIds,
             isDrawing,
             peerColor: peerColorRef.current,
+            version: new Date(),
         } as PeerState;
         return initState;
     };
 
     const [peerStates, setPeerStates] = useState<PeerState[]>([]);
-    const [myState, setMyState] = useState<PeerState | null>(initializeMyState);
+    const [myState, setMyState] = useState<PeerState | null>(() => {
+        return initializeMyState();
+    });
+
+    useEffect(()=>{
+        setMyState(initializeMyState());
+    }, []);
 
     useEffect(() => {
         setMyState((prev) => {
@@ -96,6 +95,7 @@ export const useWebRTC = ({ currentElement, isDrawing }: PropType) => {
             if (!dataChannelsRef.current) return;
             const messageStr = JSON.stringify(message);
             for (const [peerId, channel] of Object.entries(dataChannelsRef.current)) {
+                if(peerId === peerIdRef.current) continue;
                 if (channel.readyState === 'open') {
                     channel.send(messageStr);
                 }
@@ -119,10 +119,6 @@ export const useWebRTC = ({ currentElement, isDrawing }: PropType) => {
         broadcastAppStateViaWebRTC();
     }, [elements, connections, dataChannelsRef, peerIdRef]);
 
-    // useEffect(() => {
-    //     applyIncomingStatesToMyState();
-    // }, [Object.keys(dataChannelsRef.current).join(',')]);
-
     useEffect(() => {
 
         const applyIncomingStatesToMyState = () => {
@@ -131,9 +127,11 @@ export const useWebRTC = ({ currentElement, isDrawing }: PropType) => {
             for (const [peerId, channel] of Object.entries(dataChannelsRef.current)) {
                 channel.onmessage = (event) => {
                     const message = JSON.parse(event.data);
+                    if (peerId === peerIdRef.current) return;
                     switch (message.type) {
                         case "PEER_SYNC": {
                             const peerState = message.payload.peerState;
+
                             setPeerStates((prev) => {
                                 const existingIndex = prev.findIndex(
                                     (p: PeerState) => p.peerId === peerState.peerId
@@ -177,18 +175,40 @@ export const useWebRTC = ({ currentElement, isDrawing }: PropType) => {
             !peerColorRef.current
         ) return; // Don't set state if essential fields are missing
 
-        setMyState({
-            peerId: peerIdRef.current,
-            peerName: peerNameRef.current,
-            cursorPosition: lastMousePos,
-            currentElement,
-            selectedElementIds,
-            isDrawing,
-            peerColor: peerColorRef.current,
-        });
+        const updateMyState = () => {
+            setMyState(prev => {
+                if (!prev) return null;
+
+                const next: PeerState = {
+                    ...prev,
+                    cursorPosition: lastMousePos,
+                    currentElement,
+                    selectedElementIds,
+                    isDrawing,
+                };
+
+                const hasChanged =
+                    prev.currentElement !== currentElement ||
+                    prev.isDrawing !== isDrawing ||
+                    prev.cursorPosition.x !== lastMousePos.x ||
+                    prev.cursorPosition.y !== lastMousePos.y ||
+                    JSON.stringify(prev.selectedElementIds) !== JSON.stringify(selectedElementIds);
+
+                if (hasChanged) {
+                    return {
+                        ...next,
+                        version: Date.now()  // Only bump version if something changed
+                    };
+                }
+
+                return prev;
+            });
+        };
+
+        updateMyState();
+
     }, [lastMousePos, currentElement, selectedElementIds, isDrawing]);
 
-
-    return { peerStates, setMyState };
+    return { peerStates, setMyState, peerIdRef };
 
 };
