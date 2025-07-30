@@ -727,8 +727,8 @@ const Canvas: React.FC = () => {
   }, [selectedElementIds]);
 
   // useEffect(()=>{
-  //   console.log(elements);
-  // }, [elements]);
+  //   console.log({elements, connections});
+  // }, [elements, connections]);
 
   return (
     <>

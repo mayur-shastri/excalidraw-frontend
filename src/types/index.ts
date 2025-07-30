@@ -165,7 +165,7 @@ export type Connection = {
   arrowElementId: string; // Optional reference to visual arrow
   version: Date;
   isDeleted: boolean;
-  versionNonce: number;
+  versionNonce: number; // a random number between 0 and 1
 };
 
 export type DropdownButtonProps = {

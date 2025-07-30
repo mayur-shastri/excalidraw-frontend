@@ -5,7 +5,7 @@ import { CanvasProvider } from "../contexts/CanvasContext/CanvasProvider";
 import Canvas from "../components/Canvas/Canvas";
 import TextEditor from "../components/TextEditor";
 import PropertyPanel from "../components/PropertyPanel";
-import Toolbar from "../components/Toolbar";
+import Toolbar from "../components/Toolbar/Toolbar";
 import ZoomPanel from "../components/ZoomPanel";
 import { getItemLocalStorage, setItemLocalStorage } from "../utils/localStorage";
 import { useDiagramContext } from "../contexts/DiagramContext/DiagramContext";
