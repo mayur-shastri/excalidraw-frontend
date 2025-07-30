@@ -55,6 +55,8 @@ function DrawingApp() {
     const [undoStack, setUndoStack] = useState<Snapshot[]>([]);
     const [redoStack, setRedoStack] = useState<Snapshot[]>([]);
 
+    const [diagramTitle, setDiagramTitle] = useState<string | null>(null);
+
     const [activeTool, setActiveTool] = useState<ElementType>('selection');
     const [selectedElementIds, setSelectedElementIds] = useState<string[]>([]);
     const [hoveredElement, setHoveredElement] = useState<DrawElement | null>(null);
@@ -324,10 +326,14 @@ function DrawingApp() {
                 const mergedElements = mergeElements(prev, res.data.elements, currentDiagramId);
                 return mergedElements;
             });
+
             setConnections((prev: Connection[]): Connection[] => {
                 const mergedConnections = mergeConnections(prev, res.data.connections, currentDiagramId);
                 return mergedConnections;
             });
+
+            setDiagramTitle(res.data.title);
+
             setLoading(false);
         }
 
@@ -410,7 +416,7 @@ function DrawingApp() {
                         canUndo={undoStack.length > 0}
                         canRedo={redoStack.length > 0}
                     />
-                    <ButtonGroup />
+                    <ButtonGroup diagramTitle={diagramTitle}/>
                     <ZoomPanel />
                 </div>
             </CanvasProvider>

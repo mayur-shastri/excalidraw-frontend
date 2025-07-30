@@ -55,6 +55,7 @@ const DrawingCard = ({ drawing }: any) => {
 
             const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/diagrams/get/${drawing.id}`);
             setElements(res.data.elements);
+            setConnections(res.data.connections);
             setDate(calculateDate(res.data.updatedAt));
         } catch (error) {
             toast.error("Failed to load diagram preview.");
