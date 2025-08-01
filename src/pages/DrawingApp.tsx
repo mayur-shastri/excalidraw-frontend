@@ -19,6 +19,11 @@ import Loading from "./Loading";
 import { mergeElements } from "../webrtc/mergeElements";
 import { mergeConnections } from "../webrtc/mergeConnections";
 
+// TODO:
+// 1. Add support for UML Diagrams
+// 2. Fix webrtc bugs
+// 3. Fix arrow stuff
+
 function areEqual(a: DrawElement[], b: DrawElement[]) {
     return JSON.stringify(a) === JSON.stringify(b);
 }
