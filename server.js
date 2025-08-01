@@ -13,7 +13,7 @@ const __dirname = path.dirname(__filename);
 app.use(express.static(path.join(__dirname, 'dist')));
 
 // SPA fallback: serve index.html for all unmatched routes
-app.get('*', (req, res) => {
+app.get('/:path(*)', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
