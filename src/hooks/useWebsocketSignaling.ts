@@ -5,6 +5,7 @@ import { getSocket, disconnectSocket } from '../webrtc/socket';
 import { useDiagramContext } from '../contexts/DiagramContext/DiagramContext';
 import { toast } from 'sonner';
 import { supabase } from '../utils/supabaseClient';
+import { useNavigate } from 'react-router-dom';
 
 export const useWebsocketSignaling = () => {
 
@@ -17,6 +18,8 @@ export const useWebsocketSignaling = () => {
     const peerColorRef = useRef<string>("");
     const peerNameRef = useRef<string>("");
 
+    const navigate = useNavigate();
+
     useEffect(() => {
 
         const run = async () => {
@@ -27,17 +30,30 @@ export const useWebsocketSignaling = () => {
             socketRef.current = socket;
 
             const getSupabaseToken = async () => {
-                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-                if (sessionError || !session) {
-                    toast.error("You are not logged in!");
-                    return;
+                let { data: { session }, error } = await supabase.auth.getSession();
+
+                if (!session || error) {
+                    // Try to refresh session
+                    const { data: refreshedData, error: refreshError } = await supabase.auth.refreshSession();
+                    if (refreshError || !refreshedData.session) {
+                        toast.error("You are not logged in!");
+                        return null;
+                    }
+                    session = refreshedData.session;
                 }
+
                 return session.access_token;
             }
 
             const token = await getSupabaseToken();
 
             socket.emit('join', { diagramId: currentDiagramId, token });
+
+            socket.on('auth-error', () => {
+                toast.warning("Authorization failed");
+                disconnectSocket();
+                navigate('/dashboard');
+            });
 
             socket.on('joined', async ({ peerId, peers, peerName, peerColor }) => {
                 peerIdRef.current = peerId;
@@ -94,6 +110,7 @@ export const useWebsocketSignaling = () => {
                 delete peerConnectionsRef.current[peerId];
                 delete dataChannelsRef.current[peerId];
             });
+
         }
 
         run();
