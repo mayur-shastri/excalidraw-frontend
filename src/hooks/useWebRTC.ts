@@ -46,10 +46,6 @@ export const useWebRTC = ({ currentElement, isDrawing }: PropType) => {
         return initializeMyState();
     });
 
-    useEffect(()=>{
-        setMyState(initializeMyState());
-    }, []);
-
     useEffect(() => {
         setMyState((prev) => {
             if (!prev) return null;
