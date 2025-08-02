@@ -42,6 +42,8 @@ export const useWebsocketSignaling = () => {
                     session = refreshedData.session;
                 }
 
+                console.log("sending token: ", session.access_token);
+
                 return session.access_token;
             }
 

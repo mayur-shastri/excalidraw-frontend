@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Point } from '../../../types';
 
 interface PeerCursorProps {
@@ -8,10 +8,6 @@ interface PeerCursorProps {
 }
 
 const PeerCursor: React.FC<PeerCursorProps> = ({ position, name, color }) => {
-
-    useEffect(() => {
-        console.log("peercursor rendered");
-    }, []);
 
     return (
         <div

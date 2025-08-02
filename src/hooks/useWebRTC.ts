@@ -127,7 +127,6 @@ export const useWebRTC = ({ currentElement, isDrawing }: PropType) => {
                     switch (message.type) {
                         case "PEER_SYNC": {
                             const peerState = message.payload.peerState;
-                            console.log("peerstate: ", peerState);
                             setPeerStates((prev) => {
                                 const existingIndex = prev.findIndex(
                                     (p: PeerState) => p.peerId === peerState.peerId
