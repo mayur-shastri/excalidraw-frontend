@@ -42,8 +42,6 @@ export const useWebsocketSignaling = () => {
                     session = refreshedData.session;
                 }
 
-                console.log("sending token: ", session.access_token);
-
                 return session.access_token;
             }
 
@@ -58,6 +56,7 @@ export const useWebsocketSignaling = () => {
             });
 
             socket.on('joined', async ({ peerId, peers, peerName, peerColor }) => {
+                console.log("Joined:", { peerId, peers, peerName, peerColor });
                 peerIdRef.current = peerId;
                 peerNameRef.current = peerName;
                 peerColorRef.current = peerColor;
