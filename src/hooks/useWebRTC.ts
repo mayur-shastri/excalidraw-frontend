@@ -27,42 +27,8 @@ export const useWebRTC = ({ currentElement, isDrawing }: PropType) => {
 
     const { currentDiagramId } = useDiagramContext();
 
-    const initializeMyState = () => {
-        const initState = {
-            peerId: peerIdRef.current,
-            peerName: peerNameRef.current, // Replace with actual name
-            cursorPosition: lastMousePos,
-            currentElement,
-            selectedElementIds,
-            isDrawing,
-            peerColor: peerColorRef.current,
-            version: new Date(),
-        } as PeerState;
-        return initState;
-    };
-
     const [peerStates, setPeerStates] = useState<PeerState[]>([]);
-    const [myState, setMyState] = useState<PeerState | null>(() => {
-        return initializeMyState();
-    });
-
-    useEffect(()=>{
-        console.log("As soon as page loads");
-        console.log(peerColorRef.current);
-        console.log(peerNameRef.current);
-        console.log(myState);
-    }, []);
-
-    useEffect(() => {
-        setMyState((prev) => {
-            if (!prev) return null;
-
-            return {
-                ...prev,
-                cursorPosition: lastMousePos,
-            };
-        });
-    }, [lastMousePos]);
+    const [myState, setMyState] = useState<PeerState | null>(null);
 
     useEffect(() => {
         if (!myState) return;
@@ -92,13 +58,48 @@ export const useWebRTC = ({ currentElement, isDrawing }: PropType) => {
     }, [myState, dataChannelsRef]);
 
     useEffect(() => {
+        const peerId = peerIdRef.current;
+        const peerName = peerNameRef.current;
+        const peerColor = peerColorRef.current;
+
+        const nextState: PeerState | null =
+            peerId && peerName && peerColor
+                ? {
+                    peerId,
+                    peerName,
+                    peerColor,
+                    cursorPosition: lastMousePos,
+                    currentElement,
+                    selectedElementIds,
+                    isDrawing,
+                    version: new Date(),
+                }
+                : null;
+
+        setMyState(nextState);
+    }, [
+        peerIdRef,
+        peerNameRef,
+        peerColorRef,
+        lastMousePos,
+        currentElement,
+        selectedElementIds,
+        isDrawing,
+        setMyState
+    ]);
+
+    useEffect(()=>{
+        console.log(myState);
+    }, [myState]);
+
+    useEffect(() => {
         if (!elements || !connections) return;
 
         const sendToAllPeers = (message: object) => {
             if (!dataChannelsRef.current) return;
             const messageStr = JSON.stringify(message);
             for (const [peerId, channel] of Object.entries(dataChannelsRef.current)) {
-                if(peerId === peerIdRef.current) continue;
+                if (peerId === peerIdRef.current) continue;
                 if (channel.readyState === 'open') {
                     channel.send(messageStr);
                 }
@@ -130,7 +131,7 @@ export const useWebRTC = ({ currentElement, isDrawing }: PropType) => {
             for (const [peerId, channel] of Object.entries(dataChannelsRef.current)) {
                 channel.onmessage = (event) => {
                     const message = JSON.parse(event.data);
-                    if (peerId === peerIdRef.current) return;
+                    if (peerId === peerIdRef.current) return; //dont apply feedback broadcasts of your own state to yourself
                     switch (message.type) {
                         case "PEER_SYNC": {
                             const peerState = message.payload.peerState;
@@ -168,48 +169,7 @@ export const useWebRTC = ({ currentElement, isDrawing }: PropType) => {
         }
 
         applyIncomingStatesToMyState();
-    }, [currentDiagramId, dataChannelsRef, elements, setElements, setConnections]);
-
-    useEffect(() => {
-        if (
-            !peerIdRef.current ||
-            !peerNameRef.current ||
-            !peerColorRef.current
-        ) return; // Don't set state if essential fields are missing
-
-        const updateMyState = () => {
-            setMyState(prev => {
-                if (!prev) return null;
-
-                const next: PeerState = {
-                    ...prev,
-                    cursorPosition: lastMousePos,
-                    currentElement,
-                    selectedElementIds,
-                    isDrawing,
-                };
-
-                const hasChanged =
-                    prev.currentElement !== currentElement ||
-                    prev.isDrawing !== isDrawing ||
-                    prev.cursorPosition.x !== lastMousePos.x ||
-                    prev.cursorPosition.y !== lastMousePos.y ||
-                    JSON.stringify(prev.selectedElementIds) !== JSON.stringify(selectedElementIds);
-
-                if (hasChanged) {
-                    return {
-                        ...next,
-                        version: Date.now()  // Only bump version if something changed
-                    };
-                }
-
-                return prev;
-            });
-        };
-
-        updateMyState();
-
-    }, [lastMousePos, currentElement, selectedElementIds, isDrawing]);
+    }, [currentDiagramId, dataChannelsRef, elements, setElements, setConnections, peerIdRef]);
 
     return { peerStates, setMyState, peerIdRef };
 
