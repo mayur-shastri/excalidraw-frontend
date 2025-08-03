@@ -46,6 +46,13 @@ export const useWebRTC = ({ currentElement, isDrawing }: PropType) => {
         return initializeMyState();
     });
 
+    useEffect(()=>{
+        console.log("As soon as page loads");
+        console.log(peerColorRef.current);
+        console.log(peerNameRef.current);
+        console.log(myState);
+    }, []);
+
     useEffect(() => {
         setMyState((prev) => {
             if (!prev) return null;
